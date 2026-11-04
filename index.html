@@ -1389,15 +1389,23 @@ function hexFX3D(g,t,fl){
   decal(G.thin,b.x,b.y,b.r+20,b.r+20,t*2,'#c99bff',.6*fade,1.2,true);
 }
 function spirit3D(g,rdt){if(!g.spirit||!g.spirit.length)return;
-  for(let i=g.spirit.length-1;i>=0;i--){const q=g.spirit[i];q.t+=rdt;if(q.t>.75){g.spirit.splice(i,1);continue;}
-    const k=q.t/.75,rise=-120+Math.pow(Math.min(1,q.t/.3),.6)*300,a=k<.5?1:1-(k-.5)/.5,x=q.x,z=q.y,base=rise,top=rise+230;
-    const blade=[[x,Math.max(0,base),z],[x,top,z]];
-    beam(blade[0],blade[1],34,'#7fe0ff',.45*a);beam(blade[0],blade[1],16,'#bff4ff',.8*a);beam(blade[0],blade[1],5,'#ffffff',a);
-    beam([x,top,z],[x,top+26,z],10,'#bff4ff',.8*a);
-    beam([x-38,base-6,z],[x+38,base-6,z],9,'#9fe8ff',.9*a);beam([x,base-6,z],[x,base-46,z],7,'#9fe8ff',.8*a);
-    spr(x,Math.max(30,top*.55),z,90,300,'#7fe0ff',.35*a);
-    if(q.t<.25){decal(E.G.ring,x,z,40+q.t*360,40+q.t*360,0,'#bff4ff',(1-q.t/.25)*.8,.9,true);spr(x,10,z,120,120,'#bff4ff',1-q.t/.25);}
-    if(Math.random()<.7)ep({x:x+rand(-14,14),y:rand(20,160),z:z+rand(-14,14),vx:rand(-30,30),vy:rand(80,200),vz:rand(-30,30),dur:.5,s:8,c:'#bff4ff',a:.9});}
+  const fl=E.bfl||60;
+  for(let i=g.spirit.length-1;i>=0;i--){const q=g.spirit[i];q.t+=rdt;if(q.t>.8){g.spirit.splice(i,1);continue;}
+    const sw=Math.min(1,q.t/.3),e=1-Math.pow(1-sw,3),a=q.t<.4?1:1-(q.t-.4)/.4,A0=-1.25,A1=.38,ang=A0+(A1-A0)*e;
+    const P=[q.x-34,-14,q.y+8],L=270,tipOf=an=>[P[0]+Math.sin(an)*L,P[1]+Math.cos(an)*L,P[2]],midOf=an=>[P[0]+Math.sin(an)*L*.55,P[1]+Math.cos(an)*L*.55,P[2]];
+    /* crescent left by the sweep */
+    const from=Math.max(A0,ang-1.25),N=20;let pt=null,pm=null;
+    for(let k=0;k<=N;k++){const an=from+(ang-from)*k/N,t2=tipOf(an),m2=midOf(an),al=(k/N)*a;
+      if(pt){beam(pt,t2,40,'#7fe0ff',al*.45);beam(pt,t2,12,'#bff4ff',al*.85);beam(pt,t2,4,'#ffffff',al);beam(pm,m2,22,'#9fe8ff',al*.3);}pt=t2;pm=m2;}
+    /* the spirit blade */
+    const d=[Math.sin(ang),Math.cos(ang),0],n=[Math.cos(ang),-Math.sin(ang),0],tip=tipOf(ang),base=[P[0]+d[0]*8,P[1]+d[1]*8,P[2]];
+    beam(base,tip,36,'#7fe0ff',.42*a);beam(base,tip,16,'#bff4ff',.85*a);beam(base,tip,5,'#ffffff',a);
+    beam([base[0]-n[0]*40,base[1]-n[1]*40,base[2]],[base[0]+n[0]*40,base[1]+n[1]*40,base[2]],9,'#9fe8ff',.9*a);
+    beam(base,[P[0]-d[0]*40,P[1]-d[1]*40,P[2]],7,'#9fe8ff',.8*a);
+    spr(tip[0],tip[1],tip[2],40,40,'#ffffff',.8*a);
+    /* impact on the boss as the blade passes through */
+    if(q.t<.28){const f=1-q.t/.28;spr(q.x,fl,q.y,160*f+40,160*f+40,'#bff4ff',f);decal(E.G.ring,q.x,q.y,40+q.t*380,40+q.t*380,0,'#bff4ff',f*.8,.9,true);}
+    if(Math.random()<.8){const u=rand(.3,1),pp=[P[0]+d[0]*L*u,P[1]+d[1]*L*u,P[2]];ep({x:pp[0],y:Math.max(4,pp[1]),z:pp[2],vx:n[0]*rand(40,120),vy:rand(20,120),vz:rand(-30,30),dur:.5,s:8,c:'#bff4ff',a:.9});}}
 }
 function legSeg(w,L){return geo('seg'+w+'_'+L,()=>gT(boxS(w,L,w),0,-L/2,0));}
 function buildFeet(root,el,ftype,fl){
