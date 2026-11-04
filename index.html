@@ -185,6 +185,11 @@ kbd{font:600 12px var(--f-ui); padding:1px 6px; background:var(--panel-2); color
 .bar span{position:absolute; inset:0; display:grid; place-items:center; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; text-shadow:0 1px 2px var(--shadow)}
 .bar.hp .fill{background:var(--heal)}
 .bar.mp{height:10px}
+.bar.fury{height:8px}
+.bar.fury .fill{background:#ff6a3d}
+.bar.fury span{font-size:8.5px}
+.bar.fury.full .fill{background:linear-gradient(90deg,#ff6a3d,#ffd36b,#ff6a3d);animation:furyGlow .6s linear infinite alternate}
+@keyframes furyGlow{from{filter:brightness(1)}to{filter:brightness(1.5)}}
 .bar.mp .fill{background:var(--mana)}
 .bar.mp span{font-size:9.5px}
 .stagger{display:flex; align-items:center; gap:8px; margin-top:5px}
@@ -281,6 +286,8 @@ body.ml .bar{height:9px}
 body.ml .bar span{font-size:7.5px; text-shadow:none}
 body.ml .bar.mp{height:5px}
 body.ml .bar.mp span{display:none}
+body.ml .bar.fury{height:4px}
+body.ml .bar.fury span{display:none}
 body.ml .bar .shield{height:2px}
 body.ml .chips{position:absolute; top:calc(100% + 8px); left:0; width:60vw; min-height:0; gap:3px}
 body.ml .chip{font-size:8.5px; padding:1px 5px; background:var(--veil)}
@@ -417,6 +424,7 @@ body.ml .sk:nth-child(3){right:0; bottom:0; width:56px; height:56px; background:
         <div class="pb-name"><span id="pb-name"></span><span id="pb-hint" class="muted"></span></div>
         <div class="bar hp"><i class="fill" id="pb-hp"></i><i class="shield" id="pb-sh"></i><span id="pb-hptext"></span></div>
         <div class="bar mp"><i class="fill" id="pb-mp"></i><span id="pb-mptext"></span></div>
+        <div class="bar fury" id="pb-furybar" hidden><i class="fill" id="pb-fury"></i><span id="pb-furytext">Fury</span></div>
         <div class="chips" id="pb-buffs"></div>
       </div>
       <div class="skillbar" id="skillbar"></div>
@@ -462,7 +470,7 @@ function recordText(){return `Attempts ${store.attempts} · Victories ${store.wi
 /* ---------- sound (synthesized with Web Audio, no files) ---------- */
 const SFX=(()=>{
   let ac=null,master=null,nb=null,voices=0;const last={};
-  const GAP={hit:.05,crit:.05,shieldHit:.06,swing:.08,arrow:.04,bullet:.045,spirit:.05,hurt:.1,sizzle:.25,warn:.12,boom:.07,splat:.1,bossShot:.12,dodge:.15,bolt:.08,deny:.12,tick:.03,click:.05,stun:.2,reveal:.3};
+  const GAP={hit:.05,crit:.05,shieldHit:.06,swing:.08,arrow:.04,bullet:.045,spirit:.05,hurt:.1,sizzle:.25,warn:.12,boom:.07,splat:.1,bossShot:.12,dodge:.15,bolt:.08,deny:.12,tick:.03,click:.05,stun:.2,reveal:.3,punch:.04,hook:.06};
   function init(){
     if(ac){if(ac.state==='suspended')ac.resume().catch(()=>{});return;}
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
@@ -513,6 +521,9 @@ const SFX=(()=>{
     stun(){[1200,1500,1800].forEach((f,i)=>tone({type:'triangle',f,dur:.07,vol:.07,d:i*.06}));},
     stagger(){[196,294,392].forEach(f=>tone({f,dur:1.3,vol:.16,a:.005}));tone({f:98,f2:70,dur:.9,vol:.3});noise({ft:'lowpass',f:500,dur:.3,vol:.3});},
     reveal(){tone({type:'sawtooth',f:82,dur:1.1,vol:.13,lp:500,a:.08});tone({type:'sawtooth',f:123,dur:1.1,vol:.09,lp:600,a:.12});tone({f:41,dur:1,vol:.3,a:.05});},
+    punch(){tone({f:150,f2:55,dur:.11,vol:.42});noise({ft:'lowpass',f:1200,f2:300,dur:.07,vol:.3});},
+    hook(){tone({f:120,f2:40,dur:.18,vol:.55});noise({ft:'lowpass',f:900,f2:150,dur:.14,vol:.42});tone({type:'square',f:90,f2:45,dur:.08,vol:.08,lp:600});},
+    slam(){tone({f:70,f2:28,dur:.55,vol:.6});noise({ft:'lowpass',f:520,f2:60,dur:.5,vol:.5});noise({ft:'bandpass',f:1600,q:1,dur:.08,vol:.2});},
     heartbeat(){tone({f:62,f2:40,dur:.13,vol:.4});tone({f:58,f2:38,dur:.13,vol:.3,d:.2});},
     gate(){tone({f:55,f2:45,dur:1.4,vol:.4,a:.05});noise({ft:'lowpass',f:300,dur:1.2,vol:.25,a:.3});tone({type:'sawtooth',f:110,dur:1.4,vol:.07,lp:400,a:.4});},
     start(){tone({f:90,f2:40,dur:.5,vol:.5});noise({ft:'lowpass',f:700,f2:100,dur:.4,vol:.35});[147,220,294].forEach((f,i)=>tone({type:'sawtooth',f,dur:.9,vol:.06,lp:1500,a:.05,d:.08+i*.03}));},
@@ -621,17 +632,22 @@ const SKILLS={
     cast(){const p=game.p;p.buffs.anchor=3.05;p.dash=null;for(let k=0;k<30;k++)later(k*0.1,()=>{const pl=game.p;const t=dirTo(pl,game.b),a=Math.atan2(t.y,t.x)+rand(-0.06,0.06);pl.muzzle=0.06;pl.mside=-(pl.mside||1);SFX.play('bullet');shoot({vx:Math.cos(a)*850,vy:Math.sin(a)*850,dmg:dmg(game.d,8,0.34,0),r:4,kind:'bullet',color:'#ffe0a0',life:3,canCrit:true,supp:true,homing:true});});}},
 
   charge:{name:'Charge Punch',cost:20,cd:7,range:260,desc:d=>`Rush at the boss and punch for ${dmg(d,50,1.3,0)} damage, stunning it for 0.6 seconds.`,
-    cast(){const p=game.p,b=game.b;const len=Math.min(280,Math.max(60,dist(p,b)-b.r));startDash(dirTo(p,b),len+20,0.22,()=>{hitBoss(dmg(game.d,50,1.3,0),{canCrit:true});stunBoss(0.6);burst(b.x,b.y,'#ff8fb0',16,240);shake(4);},true);}},
-  slam:{name:'Ground Slam',cost:30,cd:10,desc:d=>`Smash the ground around you for ${dmg(d,60,1.05,0)} damage. A boss caught in it is stunned for 1 second.`,
-    cast(){const p=game.p,b=game.b;SFX.play('boom');fx({type:'ring',x:p.x,y:p.y,r0:20,r1:140,color:'#ff8fb0',dur:0.4,w:6});burst(p.x,p.y,'#ffb3c8',18,220);shake(4);if(dist(p,b)<140+b.r*0.7){hitBoss(dmg(game.d,60,1.05,0),{canCrit:true});stunBoss(1);}}},
+    cast(){const p=game.p,b=game.b,fur=game.empFury;const len=Math.min(fur?420:280,Math.max(60,dist(p,b)-b.r));startDash(dirTo(p,b),len+20,fur?.26:.22,()=>{const t2=dirTo(game.p,b);hitBoss(dmg(game.d,50,1.3,0)*(fur?1.3:1),{canCrit:true});stunBoss(fur?1:.6);SFX.play('hook');burst(b.x,b.y,'#ff8fb0',16,240);shake(5);game.hitstop=.06;fx({type:'cone',x:b.x-t2.x*b.r,y:b.y-t2.y*b.r,ang:Math.atan2(t2.y,t2.x),dur:.35});},true);}},
+  slam:{name:'Ground Slam',cost:30,cd:10,desc:d=>`Hop and slam both fists into the ground for ${dmg(d,60,1.05,0)} damage around you. A boss caught in it is stunned for 0.6 seconds.`,
+    cast(){const g=game,p=g.p,fur=g.empFury,R=fur?210:140;p.slamT=.3;later(.3,()=>{const b=game.b;SFX.play('slam');fx({type:'ring',x:p.x,y:p.y,r0:20,r1:R,color:'#ff8fb0',dur:.4});burst(p.x,p.y,'#ffb3c8',18,220);shake(6);game.hitstop=.05;(game.cracks||(game.cracks=[])).push(makeCrack(p.x,p.y,fur?.9:.6));
+      if(E.on&&E.vp)for(let i=0;i<24;i++){const a=rand(0,TAU),v=rand(60,R*1.6);ep({x:p.x,y:4,z:p.y,vx:Math.cos(a)*v,vy:rand(20,70),vz:Math.sin(a)*v,dur:rand(.6,1),s:rand(18,30),grow:30,c:'#b48a5a',a:.35,drag:2});}
+      if(!b.dead&&dist(p,b)<R+b.r*0.7){hitBoss(dmg(game.d,60,1.05,0)*(fur?1.3:1),{canCrit:true});stunBoss(.6);}});}},
   bloodlust:{name:'Bloodlust',cost:25,cd:15,desc:()=>`For 5 seconds, heal for 30% of all damage you deal.`,
-    cast(){SFX.play('heal');game.p.buffs.lifesteal=5;fx({type:'ring',x:game.p.x,y:game.p.y,r0:40,r1:12,color:'#ff6f9a',dur:0.4,w:4});}},
-  combo:{name:'Combo Rush',cost:20,cd:6,range:50,desc:d=>`Throw 3 rapid strikes, ${dmg(d,20,0.7,0)} damage each.`,
-    cast(){for(let k=0;k<3;k++)later(k*0.14,()=>{const b=game.b;if(dist(game.p,b)<game.p.r+b.r+70){hitBoss(dmg(game.d,20,0.7,0),{canCrit:true});fx({type:'slash',x:b.x+rand(-14,14),y:b.y+rand(-14,14),ang:rand(0,TAU),r:b.r,color:'#ffc2d4'});}});}},
+    cast(){const fur=game.empFury;SFX.play('heal');game.p.buffs.lifesteal=fur?7:5;game.p.lsMul=fur?.45:.3;fx({type:'ring',x:game.p.x,y:game.p.y,r0:40,r1:12,color:'#ff6f9a',dur:0.4,w:4});}},
+  combo:{name:'Combo Rush',cost:20,cd:6,range:50,desc:d=>`Jab, cross, then uppercut for ${dmg(d,20,0.7,0)} damage each. The uppercut hits 20% harder and knocks the boss back.`,
+    cast(){const g=game,fur=g.empFury,n=fur?4:3,p=g.p;p.comboT=n*.14;p.comboN=n;
+      for(let k=0;k<n;k++)later(k*0.14+.06,()=>{const b=game.b;if(b.dead)return;if(dist(game.p,b)<game.p.r+b.r+80){const last=k===n-1,t2=dirTo(game.p,b);hitBoss(dmg(game.d,20,0.7,0)*(fur?1.3:1)*(last?1.2:1),{canCrit:true});SFX.play(last?'hook':'punch');
+        fx({type:last?'upper':'punch',x:b.x-t2.x*b.r*.8,y:b.y-t2.y*b.r*.8,ang:Math.atan2(t2.y,t2.x),dur:.28});game.hitstop=last?.07:.03;
+        if(last){fx({type:'ring',x:b.x,y:b.y,r0:20,r1:120,color:'#ff8fb0',dur:.35});shake(5);if(b.stunT<=0&&!b.slide){b.x=clamp(b.x+t2.x*34,b.r+10,game.W-b.r-10);b.y=clamp(b.y+t2.y*34,b.r+10,game.H-b.r-10);}}}});}},
   quake:{name:'Earthshaker',ult:true,cost:60,cd:40,desc:d=>`Leap and crash down for ${dmg(d,220,3,0)} damage across a wide area, stunning the boss for 1.5 seconds. Then take 40% less damage for 4 seconds.`,
-    cast(){const p=game.p;p.iframe=Math.max(p.iframe,0.5);p.buffs.fortify=4.5;p.leap=0.45;later(0.45,()=>{const b=game.b;SFX.play('boom');SFX.play('stagger');(game.cracks||(game.cracks=[])).push(makeCrack(p.x,p.y,1.9));
+    cast(){const p=game.p,fur=game.empFury;p.iframe=Math.max(p.iframe,0.5);p.buffs.fortify=4.5;p.leap=0.45;later(0.45,()=>{const b=game.b;SFX.play('boom');SFX.play('stagger');(game.cracks||(game.cracks=[])).push(makeCrack(p.x,p.y,1.9));
       if(E.on&&E.vp){elemPuff('earth',p.x,4,p.y,null,320,34,0);for(let i=0;i<12;i++){const a=i/12*TAU+rand(-.15,.15),r=rand(120,200);E.spk.push({x:p.x+Math.cos(a)*r,z:p.y+Math.sin(a)*r,h:rand(34,64),t:-i*.02,dur:1.3,ry:rand(0,TAU)});}}
-      fx({type:'ring',x:p.x,y:p.y,r0:30,r1:220,color:'#ff8fb0',dur:0.5,w:8});burst(p.x,p.y,'#ffb3c8',30,300);shake(9);if(dist(p,b)<220+b.r*0.6){hitBoss(dmg(game.d,220,3,0),{canCrit:true});stunBoss(1.5);}});}},
+      fx({type:'ring',x:p.x,y:p.y,r0:30,r1:220,color:'#ff8fb0',dur:0.5,w:8});burst(p.x,p.y,'#ffb3c8',30,300);shake(9);if(dist(p,b)<(fur?290:220)+b.r*0.6){hitBoss(dmg(game.d,220,3,0)*(fur?1.3:1),{canCrit:true});stunBoss(1.5);}});}},
 };
 
 /* ---------- boss powers ---------- */
@@ -685,6 +701,7 @@ function rollBoss(){
 }
 
 /* ---------- combat core ---------- */
+function addFury(n){const g=game;if(!g||g.key!=='brawler'||g.over)return;const was=(g.fury||0)>=100;g.fury=Math.min(100,(g.fury||0)+n);if(!was&&g.fury>=100){text(g.p.x,g.p.y-50,'FURY!','#ff8a3d',20);SFX.play('stagger');}}
 function hitBoss(base,opt={}){
   const g=game;if(!g||g.over)return 0;const b=g.b,p=g.p;if(b.dead)return 0;
   let v=base,crit=!!opt.force;
@@ -696,7 +713,8 @@ function hitBoss(base,opt={}){
   if(b.shield>0){const a=Math.min(b.shield,rest);b.shield-=a;rest-=a;}
   b.hp-=rest;g.stats.dealt+=v;b.flash=0.07;SFX.play(crit?'crit':(rest<v?'shieldHit':'hit'));
   text(b.x+rand(-26,26),b.y-b.r-4+rand(-8,8),crit?v+'!':v,crit?'#ffd36b':(rest<v?'#9fd0ff':'#ffffff'),crit?22:15);
-  if(p.buffs.lifesteal)healPlayer(v*0.3);
+  if(p.buffs.lifesteal)healPlayer(v*(p.lsMul||.3));
+  addFury(3);
   if(g.boss.powers.includes('thorns'))g.thornAcc+=v*0.03;
   if(b.hp<=0)bossDown();
   return v;
@@ -711,7 +729,7 @@ function hurtPlayer(amount,opt={}){
   v=Math.max(1,Math.round(v));
   if(p.shield>0){const a=Math.min(p.shield,v);p.shield-=a;v-=a;if(a>=1)text(p.x+14,p.y-32,'-'+Math.round(a),'#9fd0ff',13);if(p.shield<=0){p.shield=0;p.shieldT=0;}}
   if(v<=0){SFX.play('shieldHit');return;}
-  p.hp-=v;g.stats.taken+=v;p.hurt=0.18;SFX.play(opt.quiet?'sizzle':'hurt');
+  p.hp-=v;g.stats.taken+=v;p.hurt=0.18;if(!opt.reflect)addFury(v*.15);SFX.play(opt.quiet?'sizzle':'hurt');
   text(p.x+rand(-10,10),p.y-30,'-'+v,'#ff6b6b',opt.reflect?13:18);
   if(!opt.reflect){shake(Math.min(8,3+v/25));if(g.boss.powers.includes('leech')&&!b.dead){const h=b.maxHp*0.015;b.hp=Math.min(b.maxHp,b.hp+h);text(b.x,b.y-b.r-24,'+'+Math.round(h),'#6fe3a6',15);reveal('leech');}}
   if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,g.c.color,40,260,4,0.9);endFight(false);}
@@ -743,7 +761,9 @@ function useSkill(i){
   if(g.cds[i]>0){pulse(i);return;}
   if(p.mp<sk.cost){text(p.x,p.y-34,'Not enough mana','#8fb4ff',13);pulse(i);return;}
   if(sk.range!==undefined&&dist(p,b)-p.r-b.r>sk.range){text(p.x,p.y-34,'Too far','#c7bfe6',13);pulse(i);return;}
+  g.empFury=g.key==='brawler'&&(g.fury||0)>=100;
   p.castT2=0.4;sk.cast();SFX.play(sk.ult?'ult':'cast');
+  if(g.empFury){g.fury=0;g.empFury=false;text(p.x,p.y-50,'Fury unleashed!','#ff8a3d',16);shake(4);}
   p.mp-=sk.cost;const cd=sk.cd*(1-g.d.cdr);g.cds[i]=cd;g.cdMax[i]=cd;
   if(sk.ult)banner(sk.name,'','hero');
 }
@@ -766,7 +786,8 @@ function basicAttack(){
   const g=game,p=g.p,b=g.b,c=g.c,d=g.d;
   p.swingT=0.24;let mul=1,force=false;if(p.empower>0){p.empower--;mul=1.5;force=true;}
   const base=(g.key==='shaman'?d.atk+d.power*0.35:d.atk)*mul;
-  if(!c.ranged){SFX.play('swing');hitBoss(base*c.meleeMul,{canCrit:true,force});addStagger();const t=dirTo(p,b);fx({type:'slash',x:p.x+t.x*(p.r+18),y:p.y+t.y*(p.r+18),ang:Math.atan2(t.y,t.x)+Math.PI/2,r:26,color:hexA(c.color,1),dur:0.18});}
+  if(!c.ranged&&g.key==='brawler'){p.punchN=(p.punchN||0)+1;const hook=p.punchN%3===0,t=dirTo(p,b);p.hook=hook;p.punchSide=hook?0:p.punchN%2;SFX.play(hook?'hook':'punch');hitBoss(base*c.meleeMul*(hook?1.3:.9),{canCrit:true,force});addStagger();g.hitstop=hook?.05:.02;fx({type:'punch',x:b.x-t.x*b.r*.85,y:b.y-t.y*b.r*.85,ang:Math.atan2(t.y,t.x),dur:hook?.26:.18,big:hook});}
+  else if(!c.ranged){SFX.play('swing');hitBoss(base*c.meleeMul,{canCrit:true,force});addStagger();const t=dirTo(p,b);fx({type:'slash',x:p.x+t.x*(p.r+18),y:p.y+t.y*(p.r+18),ang:Math.atan2(t.y,t.x)+Math.PI/2,r:26,color:hexA(c.color,1),dur:0.18});}
   else{SFX.play(c.proj.kind);const t=dirTo(p,b);shoot({vx:t.x*c.proj.speed,vy:t.y*c.proj.speed,dmg:base,canCrit:true,force,r:c.proj.r+(force?2:0),kind:c.proj.kind,color:force?'#ffe08a':c.color,life:p.buffs.anchor?3:1.6,homing:!!p.buffs.anchor});}
 }
 
@@ -821,7 +842,7 @@ function updatePlayer(dt){
   const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}
   p.mvx=mx;p.mvy=my;p.auto=false;
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0)delete p.buffs[k];}
-  p.swingT=Math.max(0,(p.swingT||0)-dt);p.rise=Math.max(0,(p.rise||0)-dt);p.castT2=Math.max(0,(p.castT2||0)-dt);
+  p.swingT=Math.max(0,(p.swingT||0)-dt);p.rise=Math.max(0,(p.rise||0)-dt);p.comboT=Math.max(0,(p.comboT||0)-dt);p.slamT=Math.max(0,(p.slamT||0)-dt);p.castT2=Math.max(0,(p.castT2||0)-dt);
   p.iframe=Math.max(0,p.iframe-dt);p.slowT=Math.max(0,p.slowT-dt);p.hurt=Math.max(0,p.hurt-dt);p.leap=Math.max(0,p.leap-dt);
   if(p.shieldT>0){p.shieldT-=dt;if(p.shieldT<=0)p.shield=0;}
   p.mp=Math.min(d.maxMp,p.mp+d.mpRegen*dt);
@@ -1214,7 +1235,7 @@ function buildHero3D(key,color){
   if(robe){addN(body,N(geo('robe',()=>cylG(3,13,30,7)),color,{y:15}));legL.hidden=legR.hidden=true;}
   else{const r=big?12:9.5;addN(body,N(geo('torso'+r,()=>cylG(r*.82,r,17,8)),color,{y:22}));addN(body,N(geo('belt'+r,()=>cylG(r*1.04,r*1.04,2.6,8)),D,{y:14.5}));}
   const hy=robe?32:36;addN(body,N(geo('head',()=>sphG(7,10,8)),S,{y:hy}));
-  const sh=big?13:11,ay=robe?27:29,armG=geo('arm',()=>gT(boxS(4.2,13,4.2),0,-6,0));
+  const sh=big?13.5:11,ay=robe?27:29,armG=big?geo('armB',()=>gT(boxS(6.2,13,6.2),0,-6,0)):geo('arm',()=>gT(boxS(4.2,13,4.2),0,-6,0));
   const armR=addN(body,N(null,null,{y:ay,z:sh}));addN(armR,N(armG,color));
   const armL=addN(body,N(null,null,{y:ay,z:-sh}));addN(armL,N(armG,color));
   const H={root,body,armR,armL,legL,legR,key};
@@ -1233,8 +1254,9 @@ function buildHero3D(key,color){
     addN(body,N(geo('brim',()=>cylG(11.5,11.5,1.3,12)),'#4a3426',{y:hy+5}));addN(body,N(geo('crown',()=>cylG(6.5,7,8,10)),'#4a3426',{y:hy+9}));
     addN(armR,N(geo('gunR',()=>boxS(4.5,20,5)),'#3a3a44',{y:-20}));addN(armL,N(geo('gunL',()=>boxS(3.4,14,4)),'#3a3a44',{y:-17}));
   }else if(key==='brawler'){
-    const c=rgb(color),gem=[c[0]*.35,c[1]*.35,c[2]*.35],fist=geo('fist',()=>sphG(6,10,8));
-    addN(armR,N(fist,color,{y:-13,emi:gem}));addN(armL,N(fist,color,{y:-13,emi:gem}));
+    const c=rgb(color),gem=[c[0]*.35,c[1]*.35,c[2]*.35],fist=geo('fistB',()=>sphG(6.8,10,8)),wrap=geo('wrap',()=>boxS(7,3.2,7)),pad=geo('pad',()=>sphG(7,10,8));
+    addN(armR,N(fist,color,{y:-13,emi:gem}));addN(armL,N(fist,color,{y:-13,emi:gem}));addN(armR,N(wrap,'#f2f2f2',{y:-8.5}));addN(armL,N(wrap,'#f2f2f2',{y:-8.5}));
+    addN(body,N(pad,color,{y:ay+1.5,z:sh,sy:.75}));addN(body,N(pad,color,{y:ay+1.5,z:-sh,sy:.75}));addN(body,N(geo('shorts',()=>cylG(11.5,10.5,7,8)),'#2a2238',{y:12}));
     addN(body,N(geo('band',()=>torusG(7.3,1.1,4,16,TAU)),'#f2f2f2',{y:hy+1.5,rx:Math.PI/2}));
   }
   H.shield=addN(root,N(E.G.sph,'#9fd0ff',{y:22,sx:30,sy:30,sz:30,a:.2,hidden:true}));
@@ -1242,10 +1264,10 @@ function buildHero3D(key,color){
 }
 function poseHero(H,p){
   const k=p.swingT>0?p.swingT/0.24:0,ph=1-k,c=p.castT2>0?p.castT2/0.4:0,A=H.armR,L=H.armL,hit=k?Math.sin(ph*Math.PI):0;
-  A.rx=A.ry=A.rz=0;L.rx=L.ry=L.rz=0;A.x=0;
+  A.rx=A.ry=A.rz=0;L.rx=L.ry=L.rz=0;A.x=0;L.x=0;
   switch(H.key){
     case'swordsman':A.rz=1.0;if(k)A.ry=1.3-2.6*ph;L.rz=.5;break;
-    case'brawler':A.rz=.9+hit*.75;A.x=hit*7;L.rz=.9;break;
+    case'brawler':{A.rz=1.25;A.ry=.35;L.rz=1.25;L.ry=-.35;if(k){const P=p.punchSide===1?L:A,sg=P===L?-1:1;if(p.hook){P.rz=1.45;P.ry=sg*(1-2*ph);P.x=hit*6;}else{P.rz=1.25+hit*.4;P.ry=sg*.35*(1-hit);P.x=hit*10;}}break;}
     case'archer':A.rz=1.35;A.x=-hit*5;L.rz=1.45;break;
     case'gunner':A.rz=1.5-k*.35;L.rz=1.35;break;
     case'shaman':A.rz=.45+hit*.6;L.rz=.3;break;
@@ -1589,7 +1611,7 @@ function render3D(){
   if(!p.dead){
     const mv=Math.hypot(p.x-E.px,p.y-E.py)/Math.max(rdt,1e-3);E.px=p.x;E.py=p.y;
     const moving=clamp(mv/120,0,1);E.walk+=rdt*Math.min(mv,400)*.09;
-    const lift=p.leap>0?Math.sin((1-p.leap/.45)*Math.PI)*34:0;
+    const sk2=p.slamT>0?1-p.slamT/.3:0,lift=(p.leap>0?Math.sin((1-p.leap/.45)*Math.PI)*34:0)+(p.slamT>0?(sk2<.55?Math.sin(sk2/.55*Math.PI/2)*20:20*(1-(sk2-.55)/.45)):0);
     Hh.root.x=p.x;Hh.root.y=lift;Hh.root.z=p.y;Hh.root.sx=Hh.root.sy=Hh.root.sz=1.22;
     let want=p.face;if(p.buffs.anchor){}else if(p.dash)want=Math.atan2(p.dash.vy,p.dash.vx);else if(moving>.3&&!(p.swingT>0)&&(p.mvx||p.mvy))want=Math.atan2(p.mvy,p.mvx);
     E.face+=Math.atan2(Math.sin(want-E.face),Math.cos(want-E.face))*Math.min(1,rdt*14);Hh.root.ry=-E.face;
@@ -1601,7 +1623,7 @@ function render3D(){
       decal(G.thin,p.x,p.y,30,30,0,'#ffd08a',.45+.2*Math.sin(t*10),.9,true);
       if(p.muzzle>0){p.muzzle-=rdt;const fx2=Math.cos(E.face),fz=Math.sin(E.face),sd=(p.mside||1)*11*1.22,mx2=p.x+fx2*40-fz*sd,mz=p.y+fz*40+fx2*sd;spr(mx2,24,mz,30,30,'#ffe7a0',1);spr(mx2,24,mz,12,12,'#ffffff',1);
         if(Math.random()<.5)spr(p.x-fz*sd*.6+rand(-6,6),10+rand(0,6),p.y+fx2*sd*.6+rand(-6,6),5,5,'#d9b25a',.9);}}
-    else Hh.body.rz=0;
+    else Hh.body.rz=g.key==='brawler'?-.14:0;
     Hh.body.x=0;if(!(p.rise>0))E.riseOn=false;
     if(p.dash&&p.dash.roll){const k=clamp(1-p.dash.t/p.dash.dur,0,1),th=-k*TAU;Hh.body.rz=th;Hh.body.x=17*Math.sin(-th);Hh.body.y=17-17*Math.cos(th);
       Hh.legL.rz=Hh.legR.rz=1.5;Hh.armR.rz=Hh.armL.rz=2.3;Hh.armR.ry=Hh.armL.ry=0;decal(G.thin,p.x,p.y,18,18,0,'#d9c9a0',.4,.8);}
@@ -1627,9 +1649,20 @@ function render3D(){
         /* its shadow on the floor */
         const gx=(hand[0]+tip[0])/2,gz=(hand[2]+tip[2])/2,gL=Math.hypot(tip[0]-hand[0],tip[2]-hand[2]);if(gL>4)decal(E.G.plane,gx+SHX*20,gz+SHZ*20,gL,9,-Math.atan2(tip[2]-hand[2],tip[0]-hand[0]),'#05030a',.45*a,.35);
         if(Math.random()<.7){const u=rand(.3,1);ep({x:hand[0]+dir[0]*reach*u,y:Math.max(4,hand[1]+dir[1]*reach*u),z:hand[2]+dir[2]*reach*u,vx:rand(-40,40),vy:rand(20,90),vz:rand(-40,40),dur:.45,s:7,c:'#bff4ff',a:.9});}}}
-    else if(p.dash){Hh.body.rz=-.45;Hh.body.y=-1;Hh.armR.rz=1.6;Hh.armR.ry=0;Hh.legL.rz=.7;Hh.legR.rz=-.6;if(g.key==='brawler'){Hh.armR.x=8;Hh.armR.rz=1.65;}}
+    else if(p.comboT>0&&g.key==='brawler'){const n=p.comboN||3,el=n*.14-p.comboT,i=Math.min(n-1,Math.floor(el/.14)),u=clamp((el-i*.14)/.14,0,1),h=Math.sin(Math.min(1,u*1.6)*Math.PI);
+      if(i===n-1){const v=Math.min(1,u*1.5);Hh.armR.rz=.5+2.4*v;Hh.armR.ry=.15;Hh.armR.x=4;Hh.body.y=Math.sin(v*Math.PI)*5;Hh.body.rz=.18;}
+      else{const P=i%2===0?Hh.armL:Hh.armR,sg=P===Hh.armL?-1:1;P.rz=1.25+h*.4;P.ry=sg*.35*(1-h);P.x=h*10;Hh.body.ry=-sg*.25*h;}}
+    else if(p.slamT>0&&g.key==='brawler'){const k=1-p.slamT/.3;if(k<.55){const u=k/.55;Hh.armR.rz=Hh.armL.rz=1.2+1.7*u;Hh.armR.ry=Hh.armL.ry=0;Hh.body.rz=.15*u;Hh.legL.rz=Hh.legR.rz=.4*u;}
+      else{const u=(k-.55)/.45;Hh.armR.rz=Hh.armL.rz=2.9-2.3*u;Hh.armR.ry=Hh.armL.ry=0;Hh.body.rz=-.5*u;Hh.legL.rz=.5;Hh.legR.rz=-.3;}}
+    else if(p.dash){Hh.body.rz=-.45;Hh.body.y=-1;Hh.armR.rz=1.6;Hh.armR.ry=0;Hh.legL.rz=.7;Hh.legR.rz=-.6;if(g.key==='brawler'){Hh.armR.x=8;Hh.armR.rz=1.65;if(Math.random()<.9)ep({x:p.x+rand(-8,8),y:4,z:p.y+rand(-8,8),vx:-p.dash.vx*.08+rand(-20,20),vy:rand(10,40),vz:-p.dash.vy*.08+rand(-20,20),dur:.6,s:rand(16,26),grow:24,c:'#b48a5a',a:.35,drag:1.5});}}
     Hh.shield.hidden=!(p.shield>0);Hh.shield.a=.16+.07*Math.sin(t*8);
-    drawNode(Hh.root,E.I,p.hurt>0?[.55,.06,.06]:(p.iframe>0&&!p.leap?[.2,.2,.26]:null));
+    if(g.key==='brawler'&&moving<.2&&!(p.comboT>0)&&!(p.slamT>0)&&!p.dash&&!(p.swingT>0))Hh.body.y+=Math.abs(Math.sin(t*7))*1.6;
+    const lsOn=p.buffs.lifesteal>0,frOn=g.key==='brawler'&&(g.fury||0)>=100;
+    drawNode(Hh.root,E.I,p.hurt>0?[.55,.06,.06]:(p.iframe>0&&!p.leap?[.2,.2,.26]:lsOn?[.3+.14*Math.sin(t*9),.02,.05]:frOn?[.3+.1*Math.sin(t*12),.12,.02]:null));
+    if(lsOn){spr(p.x,24,p.y,74,74,'#ff1a3a',.22+.08*Math.sin(t*8));if(Math.random()<.35)ep({x:p.x+rand(-14,14),y:rand(8,40),z:p.y+rand(-14,14),vy:rand(20,50),dur:.8,s:8,c:'#ff2a4a',a:.8});}
+    if(frOn){const Fv=[Math.cos(E.face),Math.sin(E.face)],Sv=[-Fv[1],Fv[0]];for(const sd of[-1,1]){const qx=p.x+Fv[0]*16+Sv[0]*sd*12,qz=p.y+Fv[1]*16+Sv[1]*sd*12;spr(qx,36+lift,qz,40,40,'#ff7a1f',.9);spr(qx,36+lift,qz,16,16,'#ffe7a0',.9);
+        if(Math.random()<.6)ep({x:qx,y:36+lift,z:qz,vx:rand(-10,10),vy:rand(40,90),vz:rand(-10,10),dur:.45,s:rand(10,16),grow:-6,c:Math.random()<.5?'#ff7a1f':'#ffd36b',a:.9});}
+      spr(p.x,26+lift,p.y,110,110,'#ff6a1f',.28+.08*Math.sin(t*10));}
     decal(G.disc,p.x+SHX*(8+lift)*.5,p.y+SHZ*(8+lift)*.5,15,15,0,'#000000',.4,.3);
     const inR=!b.dead&&(p.buffs.anchor||dist(p,b)-p.r-b.r<=g.d.range),rr=p.r+g.d.range;
     {const hr=geo('hair'+Math.round(rr),()=>ringG(1-Math.min(.02,3/Math.max(rr,60)),128,0,TAU));decal(hr,p.x,p.y,rr,rr,0,g.c.color,inR?.5:.2,.9,true);}
@@ -1699,6 +1732,11 @@ function render3D(){
   /* effects */
   for(const f of g.fx){const k=f.t/f.dur;
     if(f.type==='ring'){const r=f.r0+(f.r1-f.r0)*k;decal(G.thin,f.x,f.y,r,r,0,f.color,1-k,1.4,true);}
+    else if(f.type==='punch'){const big=f.big,sz=(big?90:56)*(1-k*.4);spr(f.x,32,f.y,sz,sz,'#ffd8e4',1-k);spr(f.x,32,f.y,sz*.4,sz*.4,'#ffffff',1-k);decal(G.thin,f.x,f.y,14+k*(big?70:40),14+k*(big?70:40),0,'#ff8fb0',(1-k)*.8,30,true);
+      if(!f.sp){f.sp=1;for(let i=0;i<(big?14:7);i++){const a=f.ang+rand(-1.1,1.1),v=rand(120,280);ep({x:f.x,y:32,z:f.y,vx:Math.cos(a)*v,vy:rand(-30,120),vz:Math.sin(a)*v,g:-300,dur:.3,s:5,c:'#ffd8e4',spark:1});}}}
+    else if(f.type==='upper'){spr(f.x,60+k*60,f.y,30,150*(1-k*.3),'#ff8fb0',1-k);spr(f.x,40,f.y,110*(1-k),110*(1-k),'#ffd8e4',1-k);if(!f.sp){f.sp=1;for(let i=0;i<16;i++)ep({x:f.x,y:30,z:f.y,vx:rand(-80,80),vy:rand(200,420),vz:rand(-80,80),g:-500,dur:.45,s:5,c:'#ffd8e4',spark:1});}}
+    else if(f.type==='cone'){const r=30+k*170,sg=sectorGeo(1.1);decal(sg,f.x,f.y,r,r,-f.ang,'#ff8fb0',(1-k)*.55,8,true);decal(sg,f.x,f.y,r*.7,r*.7,-f.ang,'#ffffff',(1-k)*.35,8.5,true);
+      if(!f.sp){f.sp=1;for(let i=0;i<18;i++){const a=f.ang+rand(-.55,.55),v=rand(200,420);ep({x:f.x,y:20,z:f.y,vx:Math.cos(a)*v,vy:rand(0,80),vz:Math.sin(a)*v,dur:.4,s:4,c:'#ffd8e4',a:.9,streak:1});}}}
     else if(f.type==='slash')decal(G.arc,f.x,f.y,f.r+4,f.r+4,-(f.ang-.35+k*.6),f.color,(1-k)*.95,22,true);
     else if(f.type==='bolt'){boltPath(f);const a=1-k,P=f.pts;
       for(let i=0;i<P.length-1;i++){beam(P[i],P[i+1],26,f.color,a*.55);beam(P[i],P[i+1],9,f.color,a);beam(P[i],P[i+1],3.2,'#ffffff',a);}
@@ -1759,6 +1797,7 @@ function setupHud(){
   hud.hp=$('#pb-hp');hud.sh=$('#pb-sh');hud.hpT=$('#pb-hptext');hud.mp=$('#pb-mp');hud.mpT=$('#pb-mptext');hud.buffs=$('#pb-buffs');hud.hint=$('#pb-hint');
   hud.stag=$('#bb-stag');hud.stagFill=$('#bb-stagfill');hud.stagT=$('#bb-stagtext');hud.stag.hidden=!!g.c.ranged;hud.lastStag=-1;
   hud.joyEl=$('#joy');hud.joyK=$('#joy i');
+  hud.furyBar=$('#pb-furybar');hud.fury=$('#pb-fury');hud.furyT=$('#pb-furytext');hud.furyBar.hidden=g.key!=='brawler';
   hud.lastBuffs=null;$('#pause').hidden=true;
 }
 function updateHud(){
@@ -1773,6 +1812,7 @@ function updateHud(){
   hud.hp.style.width=(clamp(p.hp/d.maxHp,0,1)*100).toFixed(2)+'%';
   hud.sh.style.width=(clamp(p.shield/d.maxHp,0,1)*100).toFixed(2)+'%';
   hud.hpT.textContent=`${Math.ceil(p.hp)} / ${d.maxHp}`;
+  if(g.key==='brawler'){const fv=g.fury||0;hud.fury.style.width=fv.toFixed(1)+'%';hud.furyBar.classList.toggle('full',fv>=100);const ft=fv>=100?'Fury ready':'Fury '+Math.floor(fv);if(hud.furyT.textContent!==ft)hud.furyT.textContent=ft;}
   hud.mp.style.width=(clamp(p.mp/d.maxMp,0,1)*100).toFixed(2)+'%';
   hud.mpT.textContent=`${Math.floor(p.mp)} / ${d.maxMp}`;
   const gap=dist(p,b)-p.r-b.r;hud.hint.textContent=b.dead||g.over?'':p.buffs.anchor?'Locked on':gap<=d.range?'In range':'Out of range';
@@ -1782,6 +1822,7 @@ function updateHud(){
   if(p.buffs.haste)chips.push(['Attack speed up','g']);
   if(p.buffs.whirl)chips.push(['Spinning','g']);
   if(p.buffs.lifesteal)chips.push(['Lifesteal','g']);
+  if(g.key==='brawler'&&(g.fury||0)>=100)chips.push(['Fury: next skill empowered','g']);
   if(p.buffs.lifesteal&&!b.dead)chips.push(['Boss bleeding','r']);
   if(p.buffs.fortify)chips.push(['Fortified','g']);
   if(p.buffs.anchor)chips.push(['Braced −25% damage','g']);
@@ -1817,7 +1858,7 @@ function loop(now){
   raf=requestAnimationFrame(loop);
   const g=game;if(!g)return;
   const raw=now-last,dt=Math.min(0.05,raw/1000);last=now;
-  if(!g.paused)update(dt);
+  if(!g.paused){let d2=dt;if(g.hitstop>0){g.hitstop-=dt;d2=dt*.15;}update(d2);}
   if(E.on){render3D();E.ft=E.ft*.95+raw*.05;if(++E.fc>150&&E.ft>28&&E.q>0){E.q--;E.fc=0;fitCanvas();}}else render();
   updateHud();
 }
@@ -1858,7 +1899,7 @@ function renderBuild(msg){
   const u=SKILLS[c.ult];
   $('#b-ult').innerHTML=`<span class="slot">R</span><span class="sc-head"><b>${esc(u.name)} · Ultimate</b><span class="sc-meta">${u.cost} MP · ${(u.cd*(1-d.cdr)).toFixed(1)}s</span></span><span class="sc-desc">${esc(u.desc(d))}</span>`;
   const tr=$('#b-trait');tr.hidden=!!c.ranged;
-  if(!c.ranged)tr.innerHTML=`<b>Frontline · melee trait</b>Basic hits deal ${Math.round((c.meleeMul-1)*100)}% more damage and build Stagger on the boss. Every ${STAGGER_MAX} hits it's stunned for 1.5 seconds and its current wind-up is cancelled. You take 20% less damage from its swipe and stomp.`;
+  if(!c.ranged)tr.innerHTML=(k==='brawler'?`<b>Fury · brawler passive</b>Dealing and taking damage fills Fury. At full Fury your next skill is empowered: Charge Punch goes further and stuns longer, Ground Slam hits a wider area, Combo Rush adds a fourth strike, Bloodlust lasts longer and heals more, and Earthshaker hits harder and wider.<br><br>`:'')+`<b>Frontline · melee trait</b>Basic hits deal ${Math.round((c.meleeMul-1)*100)}% more damage and build Stagger on the boss. Every ${STAGGER_MAX} hits it's stunned for 1.5 seconds and its current wind-up is cancelled. You take 20% less damage from its swipe and stomp.`;
   $('#b-note').textContent=msg||(left>0?`Spend ${left} more point${left>1?'s':''} to continue.`:ui.skills.length<2?`Choose ${2-ui.skills.length} more skill${ui.skills.length?'':'s'} to continue.`:'Ready. The boss is rolled when the gate opens.');
   $('#b-start').disabled=left>0||ui.skills.length<2;
 }
