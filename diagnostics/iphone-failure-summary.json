@@ -1,0 +1,30 @@
+{
+  "source": "User-provided physical iPhone Home Screen Web Inspector export, 4 November 2026",
+  "standalone": true,
+  "snapshot": {
+    "state": "interrupted",
+    "audioTime": 0,
+    "muted": false,
+    "sampleRate": 48000,
+    "audioSession": "auto",
+    "masterGain": 0.6000000238418579,
+    "baseLatency": 0.0026666666666666666,
+    "outputLatency": 0,
+    "hardwareMute": "not observable by Web Audio"
+  },
+  "retainedEvents": 181,
+  "eventCounts": {
+    "init": 16,
+    "created": 1,
+    "statechange": 1,
+    "gesture": 27,
+    "mute-change": 2,
+    "context-check": 16,
+    "play-attempt": 59,
+    "play-skipped": 59
+  },
+  "allRetainedAudioTimesZero": true,
+  "fullPastedTraceHasResumeRequest": false,
+  "fullPastedTraceHasScheduledSound": false,
+  "originalAttachmentSHA256": "7a2f7657cc7490dfbb75f229aae01f3f4f9f016fea166dd2a06c6358908efe9a"
+}
