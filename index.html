@@ -367,12 +367,29 @@ body.ml .sk-cd:not(:empty)+*,body.ml .sk:has(.sk-cd:not(:empty)) .sk-key{opacity
 body.ml .sk:nth-child(1){right:5px; bottom:66px; width:46px; height:46px}
 body.ml .sk:nth-child(2){right:66px; bottom:5px; width:46px; height:46px}
 body.ml .sk:nth-child(3){right:0; bottom:0; width:56px; height:56px; background:color-mix(in srgb, var(--c) 22%, transparent)}
+#rotate-gate{display:none; position:fixed; inset:0; z-index:9999; background:var(--bg,#14111f); color:var(--ink,#efe8ff);
+  flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+#rotate-gate svg.rg-phone{width:84px; height:84px; animation:rgTurn 2.4s ease-in-out infinite}
+#rotate-gate h2{margin:0; font:700 20px/1.2 "Chakra Petch",system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#ffca4f}
+#rotate-gate p{margin:0; max-width:30ch; font-size:15px; line-height:1.5; color:var(--muted,#a99cd6)}
+#rotate-gate button{margin-top:6px; background:none; border:0; color:var(--muted,#a99cd6); font:inherit; font-size:13px; text-decoration:underline; padding:10px}
+@keyframes rgTurn{0%,20%{transform:rotate(0)}55%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+@media (pointer:coarse) and (orientation:portrait) and (max-width:620px){
+  body:not(.allow-portrait) #rotate-gate{display:flex}
+}
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important; animation:none!important}
 }
 </style>
 </head>
 <body>
+<div id="rotate-gate" role="dialog" aria-modal="true" aria-labelledby="rg-title">
+  <svg class="rg-phone" viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="6" width="24" height="52" rx="5" fill="none" stroke="#ffca4f" stroke-width="3.5"/><circle cx="32" cy="51" r="2.6" fill="#ffca4f"/></svg>
+  <h2 id="rg-title">Turn your phone sideways</h2>
+  <p>Final Gate plays in landscape: joystick on the left, skills on the right.</p>
+  <button type="button" id="rg-skip">Play upright anyway</button>
+</div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="fg-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4bd"/><stop offset=".36" stop-color="#ffca4f"/><stop offset=".7" stop-color="#f29a1d"/><stop offset="1" stop-color="#b25d0b"/></linearGradient><linearGradient id="fg-goldrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe48f"/><stop offset=".5" stop-color="#d98f28"/><stop offset="1" stop-color="#874709"/></linearGradient><linearGradient id="fg-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".42" stop-color="#fff" stop-opacity=".08"/><stop offset=".43" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="fg-stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4d4490"/><stop offset="1" stop-color="#1c1636"/></linearGradient><linearGradient id="fg-stone2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a50a0"/><stop offset=".55" stop-color="#352c6a"/><stop offset="1" stop-color="#1d1739"/></linearGradient><radialGradient id="fg-door" cx=".5" cy=".78" r=".8"><stop offset="0" stop-color="#fff7d6"/><stop offset=".28" stop-color="#ffd264"/><stop offset=".66" stop-color="#e5891b"/><stop offset="1" stop-color="#5e2808"/></radialGradient><radialGradient id="fg-pglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#8f5bff" stop-opacity=".8"/><stop offset=".55" stop-color="#6a3bd8" stop-opacity=".28"/><stop offset="1" stop-color="#6a3bd8" stop-opacity="0"/></radialGradient><radialGradient id="fg-gglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd264" stop-opacity=".9"/><stop offset="1" stop-color="#ffb43a" stop-opacity="0"/></radialGradient><linearGradient id="fg-tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#40307a"/><stop offset="1" stop-color="#191134"/></linearGradient><linearGradient id="fg-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2a74"/><stop offset=".6" stop-color="#1e1540"/><stop offset="1" stop-color="#120c28"/></linearGradient><linearGradient id="fg-gem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff7cc"/><stop offset=".45" stop-color="#ffc23a"/><stop offset="1" stop-color="#b8600c"/></linearGradient><linearGradient id="fg-violet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ccff"/><stop offset=".5" stop-color="#9a5cff"/><stop offset="1" stop-color="#4b20b0"/></linearGradient><linearGradient id="fg-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffa3a3"/><stop offset=".5" stop-color="#ff3d4f"/><stop offset="1" stop-color="#a30f22"/></linearGradient><linearGradient id="fg-green" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4ffa6"/><stop offset=".5" stop-color="#5fd63c"/><stop offset="1" stop-color="#1d7a18"/></linearGradient><linearGradient id="fg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8f6ff"/><stop offset=".5" stop-color="#5fc8ff"/><stop offset="1" stop-color="#1b6fb8"/></linearGradient><linearGradient id="fg-white" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffe2a8"/></linearGradient><filter id="fg-ol" x="-30%" y="-30%" width="160%" height="160%"><feMorphology in="SourceAlpha" operator="dilate" radius=".55" result="d"/><feFlood flood-color="#1a0c03"/><feComposite in2="d" operator="in" result="o"/><feMerge><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="fg-blur8" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8"/></filter><filter id="fg-blur3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter><filter id="fg-drop" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#08040f" flood-opacity=".75"/></filter><linearGradient id="fg-h-sword" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe39a"/><stop offset=".5" stop-color="#e5a12a"/><stop offset="1" stop-color="#7a4206"/></linearGradient><linearGradient id="fg-h-shaman" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ff5ff"/><stop offset=".5" stop-color="#1fb7c9"/><stop offset="1" stop-color="#0a4a63"/></linearGradient><linearGradient id="fg-h-archer" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8ff8a"/><stop offset=".5" stop-color="#4cbf2a"/><stop offset="1" stop-color="#155a12"/></linearGradient><linearGradient id="fg-h-gunner" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd29a"/><stop offset=".5" stop-color="#f2841f"/><stop offset="1" stop-color="#7a2e05"/></linearGradient><linearGradient id="fg-h-brawler" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb3d2"/><stop offset=".5" stop-color="#e8457f"/><stop offset="1" stop-color="#6e0f33"/></linearGradient></defs></svg>
 
 
@@ -2083,12 +2100,29 @@ function openIntro(){
   $('#i-name').textContent=B.name;$('#i-title').textContent=B.title;
   $('#i-hp').textContent=B.hp.toLocaleString();$('#i-hero').textContent=CLASSES[ui.cls].name;
   $('#i-sigils').innerHTML=sigilsHtml(B,new Set());
-  const coarse=matchMedia('(pointer:coarse)').matches,portrait=innerHeight>innerWidth;
-  $('#rotate-tip').hidden=!(coarse&&portrait);
-  $('#i-full').hidden=!(coarse&&document.fullscreenEnabled);
+  $('#rotate-tip').hidden=true;
+  $('#i-full').hidden=true;
   show('s-intro');
 }
-$('#i-fight').addEventListener('click',startFight);
+// Phones: default to landscape. Android can lock it in fullscreen; iPhone can't lock, so a "turn sideways" screen covers portrait.
+const isPhone=()=>matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=620;
+async function goLandscape(){
+  if(!isPhone()||!document.fullscreenEnabled)return false;
+  try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(e){return false}
+  try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){}
+  return true;
+}
+document.addEventListener('pointerup',function firstTap(){document.removeEventListener('pointerup',firstTap,true);goLandscape();},true);
+$('#rg-skip').addEventListener('click',()=>{document.body.classList.add('allow-portrait');applyML();});
+const portraitMQ=matchMedia('(pointer:coarse) and (orientation:portrait) and (max-width:620px)');
+function onPortrait(){if(portraitMQ.matches&&!document.body.classList.contains('allow-portrait')&&game&&!game.over&&!game.paused)togglePause(true);}
+if(portraitMQ.addEventListener)portraitMQ.addEventListener('change',onPortrait);else if(portraitMQ.addListener)portraitMQ.addListener(onPortrait);
+$('#i-fight').addEventListener('click',e=>{
+  if(isPhone()&&document.fullscreenEnabled&&!document.fullscreenElement){
+    SFX.init('fullscreen-start',e);
+    goLandscape().then(()=>setTimeout(()=>{applyML();startFight();},250));
+  }else startFight(e);
+});
 $('#i-full').addEventListener('click',async e=>{
   SFX.init('fullscreen-start',e);
   try{await document.documentElement.requestFullscreen();}catch(e){}
