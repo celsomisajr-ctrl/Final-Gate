@@ -10,7 +10,7 @@ The diagnostics-only baseline browser traces are from desktop Chromium and deskt
 
 ## Physical iPhone evidence still required
 
-This build has not been published. After authorized publishing, open https://celsomisajr-ctrl.github.io/Final-Gate/?sfxdebug=1 in a fresh Safari tab. On a Mac connected to that iPhone, enable the iPhone Safari Web Inspector and use Safari Develop > iPhone > Final Gate. Inspect the console while selecting a hero, toggling SOUND off/on, entering a fight, and after background/foreground. Confirm audible or silent at each step and report the actual iOS version from Settings.
+Diagnostics-only commit 5a79169 was published with PO approval on 4 November 2026. Open https://celsomisajr-ctrl.github.io/Final-Gate/?sfxdebug=1 in a fresh Safari tab. On a Mac connected to that iPhone, enable the iPhone Safari Web Inspector and use Safari Develop > iPhone > Final Gate. Inspect the console while selecting a hero, toggling SOUND off/on, entering a fight, and after background/foreground. Confirm audible or silent at each step and report the actual iOS version from Settings.
 
 Export from the remote inspector:
 
@@ -19,6 +19,30 @@ JSON.stringify({snapshot:window.__finalGateSFX.snapshot(),events:window.__finalG
 ```
 
 Interpretation: context-not-running plus suspended/interrupted and resume result isolates unlock/resume; muted isolates saved application state; create/play failure exposes its error. A running advancing audio clock plus play-scheduled with continued physical silence points beyond the simple state guard to the device/audio route; do not claim a gesture fix resolves it without the device result.
+
+## Home Screen-specific follow-up
+
+The user confirms Safari audio works but the installed Home Screen app is silent immediately. This supersedes the earlier assumption that all iPhone Safari execution is silent. The manifest start_url is ./, so an installed launch need not retain the diagnostic query from the Safari tab. There is no service worker in this repository to attribute this to a service-worker cache. Saved finalgate.v1 app mute state must be inspected in the installed context rather than inferred from the Safari tab.
+
+Use the Home Screen app, not the Safari tab, as the Web Inspector target. In its console, enable the published diagnostics with a same-app navigation:
+
+```js
+location.search = '?sfxdebug=1&build=5a79169';
+```
+
+After it reloads, toggle SOUND off/on and enter a fight. Export from that same inspected app:
+
+```js
+JSON.stringify({
+  standalone: navigator.standalone,
+  displayMode: matchMedia('(display-mode: standalone)').matches ? 'standalone' : matchMedia('(display-mode: fullscreen)').matches ? 'fullscreen' : 'browser',
+  url: location.href,
+  snapshot: window.__finalGateSFX?.snapshot(),
+  events: window.__finalGateSFX?.events
+}, null, 2)
+```
+
+Expected: standalone true for the iOS Home Screen app, and a defined diagnostic snapshot/events. Do not delete/reinstall the app or clear storage before capturing this trace. The Home Screen silence is confirmed by the user's listening report; its context/mute/resume state is still unknown. WebKit bug 291892 reports superficially similar standalone silence, including iPhone 13 Pro, but commonly after reopening and cannot establish this immediately-silent launch's root cause: https://bugs.webkit.org/show_bug.cgi?id=291892.
 
 ## Proposed minimal fix after diagnosis
 
