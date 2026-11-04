@@ -925,11 +925,12 @@ function endFight(win){
   const g=game;if(g.over)return;g.over=true;g.win=win;SFX.play(win?'win':'lose');
   if(win){store.wins++;if(!store.best||g.t<store.best)store.best=g.t;}
   save();
-  banner(win?'Victory':'You have fallen',win?`${g.boss.name} is defeated.`:`${g.boss.name} still stands.`,win?'hero':'');
-  setTimeout(()=>{if(game===g)showResult(g);},2200);
+  const hold=win?3000:2200; // a win stays on the arena for 3 s, effects still playing, before the results
+  banner(win?'Victory':'You have fallen',win?`${g.boss.name} is defeated.`:`${g.boss.name} still stands.`,win?'hero':'',win?hold:undefined);
+  setTimeout(()=>{if(game===g)showResult(g);},hold);
 }
 let bannerTO=0;
-function banner(title,sub,kind){const el=$('#banner');el.innerHTML=`<b>${esc(title)}</b>${sub?`<span>${esc(sub)}</span>`:''}`;el.className='banner show '+(kind||'');clearTimeout(bannerTO);bannerTO=setTimeout(()=>{el.className='banner';},2400);}
+function banner(title,sub,kind,ms){const el=$('#banner');el.innerHTML=`<b>${esc(title)}</b>${sub?`<span>${esc(sub)}</span>`:''}`;el.className='banner show '+(kind||'');clearTimeout(bannerTO);bannerTO=setTimeout(()=>{el.className='banner';},ms||2400);}
 
 function useSkill(i){
   const g=game;if(!g||g.over||g.paused||g.p.dead)return;
