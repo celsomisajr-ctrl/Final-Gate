@@ -2,7 +2,7 @@
 
 A one-life 3D boss fight that runs in the browser, on desktop and phone.
 
-Pick a hero (Swordsman, Shaman, Archer, Gunner or Brawler), spend 10 stat points, choose one special skill, then open the gate. The boss and its four powers are rolled fresh every attempt, and you only get one life.
+Pick a hero (Swordsman, Shaman, Archer, Gunner or Brawler), spend 10 stat points, choose two skills, then open the gate. The boss and its four powers are rolled fresh every attempt, and you only get one life.
 
 **Play:** https://celsomisajr-ctrl.github.io/Final-Gate/
 
@@ -11,7 +11,7 @@ Pick a hero (Swordsman, Shaman, Archer, Gunner or Brawler), spend 10 stat points
 | | Desktop | Phone |
 |---|---|---|
 | Move | WASD or arrow keys | Drag on the arena (left half in landscape) |
-| Special skill | 1 or Q | Skill button |
+| Skills | 1 and 2 (or Q and E) | Skill buttons |
 | Ultimate | R | Ultimate button |
 | Basic attack | Automatic when the boss is in range | Automatic |
 | Pause | Esc | Pause button |
