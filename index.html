@@ -598,8 +598,8 @@ const SKILLS={
   judgement:{name:'Judgement Blade',ult:true,cost:60,cd:40,desc:d=>`Call down a giant blade of light that follows the boss and strikes it from above for ${dmg(d,200,4,0)} damage, cracking the arena floor.`,
     cast(){const b=game.b;(game.swords||(game.swords=[])).push({x:b.x,y:b.y,t:0,fall:.62,stay:1.4,dmg:dmg(game.d,200,4,0),hit:false});shake(3);}},
 
-  bolt:{name:'Spirit Bolt',cost:15,cd:3,desc:d=>`Hurl a spirit orb for ${dmg(d,40,0,1.3)} damage.`,
-    cast(){shoot(Object.assign(toward(480),{dmg:dmg(game.d,40,0,1.3),r:11,kind:'spirit',color:'#62f0dc'}));}},
+  bolt:{name:'Spirit Bolt',cost:15,cd:3,desc:d=>`Open a magic circle and fire a huge spirit bolt from it for ${dmg(d,40,0,1.3)} damage.`,
+    cast(){const g=game;(g.mc||(g.mc=[])).push({t:0,dur:.7,fire:.3,fired:false});later(.3,()=>{const g2=game,p=g2.p,b=g2.b,t2=dirTo(p,b);SFX.play('spirit');SFX.play('cast');shoot({x:p.x+t2.x*40,y:p.y+t2.y*40,vx:t2.x*520,vy:t2.y*520,dmg:dmg(g2.d,40,0,1.3),r:22,kind:'spirit',color:'#62f0dc',big:true,life:2});});}},
   totem:{name:'Healing Totem',cost:40,cd:16,desc:d=>`Plant a totem. While you stand near it you restore ${Math.round(d.maxHp*0.045+d.power*0.3)} health per second for 5 seconds.`,
     cast(){const p=game.p;SFX.play('heal');game.totems.push({x:p.x,y:p.y,t:5,r:140});}},
   thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Charge your staff and hurl a bolt of lightning into the boss for ${dmg(d,80,0,2.2)} damage.`,
@@ -816,6 +816,7 @@ function update(dt){
   for(let i=g.timers.length-1;i>=0;i--){const tm=g.timers[i];tm.t-=dt;if(tm.t<=0){g.timers.splice(i,1);if(!g.over)tm.fn();}}
   if(!g.over){updatePlayer(dt);updateBoss(dt);}
   updateShots(dt);updateZones(dt);updateHaz(dt);updateSwords(dt);
+  if(g.mc&&g.mc.length){for(const q of g.mc)q.t+=dt;g.mc=g.mc.filter(q=>q.t<q.dur);}
   if(g.sbolts&&g.sbolts.length){for(const q of g.sbolts)q.t+=dt;g.sbolts=g.sbolts.filter(q=>q.t<q.dur);}
   if(g.storm){g.storm.t+=dt;g.storm.pulse=Math.max(0,g.storm.pulse-dt*4);if(g.storm.t>g.storm.dur||g.b.dead)g.storm=null;}
   p.charge=Math.max(0,(p.charge||0)-dt);
@@ -1425,6 +1426,28 @@ function spirit3D(g,rdt){if(!g.spirit||!g.spirit.length)return;const fl=E.bfl||6
     spr(q.x,fl,q.y,170*f+40,170*f+40,'#bff4ff',f);spr(q.x,fl,q.y,60,60,'#ffffff',f);decal(E.G.thin,q.x,q.y,40+q.t*420,40+q.t*420,0,'#bff4ff',f*.8,.9,true);
     if(q.t<.05)for(let k=0;k<14;k++)ep({x:q.x,y:fl,z:q.y,vx:rand(-220,220),vy:rand(-40,200),vz:rand(-220,220),g:-300,dur:.4,s:6,c:'#e6fbff',spark:1});}
 }
+function magicCircle3D(g,t){if(!g.mc||!g.mc.length||g.p.dead)return;
+  const p=g.p,b=g.b,G=E.G,C=[.5,.92,1],f=Math.atan2(b.y-p.y,b.x-p.x),cx=p.x+Math.cos(f)*40,cz=p.y+Math.sin(f)*40,cy=46;
+  for(const q of g.mc){const grow=Math.min(1,q.t/.15),fade=q.t<q.fire?1:Math.max(0,1-(q.t-q.fire)/(q.dur-q.fire)),a=fade,R=46*(.4+.6*(1-Math.pow(1-grow,3)))*(q.t>q.fire?1+(q.t-q.fire)*.6:1),spin=t*(q.t<q.fire?3+q.t*14:2);
+    const base=mul(trs(cx,cy,cz,0,-f,0,1,1,1),trs(0,0,0,0,0,Math.PI/2-.75,1,1,1));
+    const put=(geo,lx,lz,sx,sz,rot,al,sp)=>E.dec.push({G:geo,M:mul(mul(base,trs(0,0,0,0,sp,0,1,1,1)),trs(lx,0,lz,0,rot,0,sx,1,sz)),c:[C[0],C[1],C[2],al],add:true});
+    /* rings */
+    put(G.thin,0,0,R,R,0,.95*a,spin*.3);put(G.thin,0,0,R*.9,R*.9,0,.8*a,spin*.3);put(G.thin,0,0,R*.62,R*.62,0,.85*a,-spin*.5);put(G.thin,0,0,R*.55,R*.55,0,.6*a,-spin*.5);
+    /* rune nodes on the outer ring */
+    for(let i=0;i<5;i++){const an=i/5*TAU-Math.PI/2,nx=Math.cos(an)*R*.95,nz=Math.sin(an)*R*.95;put(G.thin,nx,nz,R*.17,R*.17,0,.95*a,spin*.3);put(G.disc,nx,nz,R*.17,R*.17,0,.12*a,spin*.3);
+      put(G.plane,nx,nz,R*.12,R*.025,an+.6,.9*a,spin*.3);put(G.plane,nx,nz,R*.025,R*.1,an,.9*a,spin*.3);}
+    /* seven-point star inside */
+    const pts=[];for(let i=0;i<7;i++){const an=i/7*TAU;pts.push([Math.cos(an)*R*.55,Math.sin(an)*R*.55]);}
+    for(let i=0;i<7;i++){const A=pts[i],B=pts[(i+3)%7],mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,L=Math.hypot(B[0]-A[0],B[1]-A[1]),an=Math.atan2(B[1]-A[1],B[0]-A[0]);put(G.plane,mx,mz,L,R*.018,-an,.75*a,-spin*.5);}
+    for(let i=0;i<7;i++){const A=pts[i],B=pts[(i+1)%7],mx=(A[0]+B[0])/2,mz=(A[1]+B[1])/2,L=Math.hypot(B[0]-A[0],B[1]-A[1]),an=Math.atan2(B[1]-A[1],B[0]-A[0]);put(G.plane,mx,mz,L,R*.015,-an,.5*a,-spin*.5);}
+    /* inner spikes and crescent core */
+    for(let i=0;i<7;i++){const an=i/7*TAU+Math.PI/7,r0=R*.3;put(G.plane,Math.cos(an)*r0,Math.sin(an)*r0,R*.14,R*.06,-an,.9*a,spin);}
+    put(G.disc,0,0,R*.2,R*.2,0,.55*a,0);put(G.thin,0,0,R*.24,R*.24,0,.9*a,spin);
+    /* glow */
+    spr(cx,cy,cz,R*3,R*3,'#62f0dc',.2*a);spr(cx,cy,cz,R*.6,R*.6,'#e6fbff',(q.t<q.fire?.25+q.t*1.5:.8)*a);
+    if(Math.random()<.6*a){const an=rand(0,TAU),rr=R*rand(.6,1),sd=[-Math.sin(f),Math.cos(f)];ep({x:cx+sd[0]*Math.cos(an)*rr,y:cy+Math.sin(an)*rr,z:cz+sd[1]*Math.cos(an)*rr,vx:Math.cos(f)*40,vy:rand(10,30),vz:Math.sin(f)*40,dur:.5,s:6,c:'#bff8ff',a:.9});}
+    if(!q.fired&&q.t>=q.fire){q.fired=true;for(let i=0;i<16;i++){const an=rand(0,TAU);ep({x:cx,y:cy,z:cz,vx:Math.cos(f)*rand(100,260)+rand(-60,60),vy:rand(-60,80),vz:Math.sin(f)*rand(100,260)+rand(-60,60),dur:.35,s:5,c:'#e6fbff',spark:1});}E.flash=Math.max(E.flash,.6);}}
+}
 function zig(A,B,n,amp){const pts=[];const dx=B[0]-A[0],dy=B[1]-A[1],dz=B[2]-A[2];for(let i=0;i<=n;i++){const u=i/n,j=(i===0||i===n)?0:amp*Math.sin(u*Math.PI);pts.push([A[0]+dx*u+rand(-j,j),A[1]+dy*u+rand(-j,j)*.6,A[2]+dz*u+rand(-j,j)]);}return pts;}
 function drawZig(pts,c,a,w){for(let i=0;i<pts.length-1;i++){beam(pts[i],pts[i+1],w*3,c,a*.45);beam(pts[i],pts[i+1],w,c,a);beam(pts[i],pts[i+1],w*.4,'#ffffff',a);}}
 function lightning3D(g,rdt,t,fl){const b=g.b,p=g.p,now=performance.now();
@@ -1701,6 +1724,7 @@ function render3D(){
   drawElemFX(g,rdt,t,E.bfl||60);
   grenades3D(g,rdt,t);
   spirit3D(g,rdt);
+  magicCircle3D(g,t);
   lightning3D(g,rdt,t,E.bfl||60);
   drawSwords3D(g,t);
   /* totems */
@@ -1732,6 +1756,8 @@ function render3D(){
     else if(s.kind==='bullet'){flat(G.box,trs(s.x,y,s.y,0,-a,0,14,2.2,2.2),[...rgb(s.color),1],null,1);spr(s.x,y,s.y,13,13,s.color,.75);}
     else if(s.kind==='wave'){decal(G.arc,s.x,s.y,s.r*1.6,s.r*1.6,-a,s.color,.95,20,true);spr(s.x,20,s.y,s.r*3,s.r*3,s.color,.8);}
     else if(s.kind==='phoenix')drawPhoenix(s,t);
+    else if(s.big){const yy=36;flat(G.ball,trs(s.x,yy,s.y,0,0,0,s.r*.55,s.r*.55,s.r*.55),[1,1,1,1],null,1);spr(s.x,yy,s.y,s.r*5,s.r*5,s.color,.95);spr(s.x,yy,s.y,s.r*2,s.r*2,'#e6fbff',.9);
+      for(let i=1;i<6;i++){spr(s.x-Math.cos(a)*s.r*.8*i,yy,s.y-Math.sin(a)*s.r*.8*i,s.r*(2.6-i*.35),s.r*(2.6-i*.35),s.color,.6-i*.1);}decal(G.disc,s.x,s.y,s.r,s.r*.9,0,'#000000',.3,.35);}
     else{flat(G.ball,trs(s.x,y,s.y,0,0,0,s.r*.7,s.r*.7,s.r*.7),[1,1,1,1],null,1);spr(s.x,y,s.y,s.r*4.2,s.r*4.2,s.color,.95);}}
   for(const s of g.hshots){
     if(!s.skull){elemProjectile(g.boss.el.k,s.x,s.rock?26:24,s.y,s.r*(s.rock?1.1:.95),t,s.x*.01);}
