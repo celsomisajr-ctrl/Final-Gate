@@ -1541,6 +1541,14 @@ function wingGeo(){return geo('pwing',()=>{const g=GB(),tips=[[3,9],[0,17],[-5,2
   for(let i=0;i<tips.length-1;i++){const a=tips[i],b=tips[i+1],m=[(a[0]+b[0])/2-3,(a[1]+b[1])/2-3.5];tri(g,[0,0,0],[a[0],0,a[1]],[m[0],0,m[1]]);tri(g,[0,0,0],[m[0],0,m[1]],[b[0],0,b[1]]);}return g;});}
 function drawPhoenix(s,t){
   const a=Math.atan2(s.vy,s.vx),y=24,k=s.r/20*2.1,base=trs(s.x,y,s.y,0,-a,0,k,k,k),flap=Math.sin(t*16+s.x*.01)*.75+.25,W=wingGeo();
+  /* fiery dragging shadow: fading ghost phoenixes along the path */
+  const Hh=s.hist||(s.hist=[]);if(!s.lastH||t-s.lastH>.022){s.lastH=t;Hh.unshift({x:s.x,z:s.y,f:flap});if(Hh.length>10)Hh.pop();}
+  for(let i=1;i<Hh.length;i++){const q=Hh[i],u=i/Hh.length,al=1-u,sc=k*(1-u*.35),M=trs(q.x,y-i*.6,q.z,0,-a,0,sc,sc,sc),c=[1,.55-.4*u,.12-.1*u];
+    for(const side of[1,-1])E.dec.push({G:W,M:mul(M,trs(-2,0,0,side*-q.f,0,0,1,1,side)),c:[c[0],c[1],c[2],.42*al],add:true});
+    beam([Hh[i-1].x,y,Hh[i-1].z],[q.x,y-i*.6,q.z],(40*al+8)*k/2.1,i<4?'#ff9a3d':'#ff3a1a',.55*al);
+    if(i%2===0){for(const side of[1,-1])E.dec.push({G:W,M:mul(trs(q.x+SHX*14,.45,q.z+SHZ*14,0,-a,0,sc,1,sc),trs(-2,0,0,0,0,0,1,1,side)),c:[.05,.02,.02,.16*al],add:false});}}
+  for(const side of[1,-1])E.dec.push({G:W,M:mul(trs(s.x+SHX*14,.5,s.y+SHZ*14,0,-a,0,k,1,k),trs(-2,0,0,0,0,0,1,1,side)),c:[.04,.02,.02,.4],add:false});
+  if(Math.random()<.8)ep({x:s.x-Math.cos(a)*18+rand(-6,6),y:y+rand(-6,6),z:s.y-Math.sin(a)*18+rand(-6,6),vx:-s.vx*.05+rand(-20,20),vy:rand(10,50),vz:-s.vy*.05+rand(-20,20),dur:rand(.35,.6),s:rand(14,24),grow:-8,c:Math.random()<.5?'#ff7a1f':'#ffd36b',a:.9});
   for(const side of[1,-1]){const M=mul(base,trs(-2,0,0,side*-flap,0,0,1,1,side));
     E.dec.push({G:W,M,c:[1,.42,.1,.85],add:true});
     E.dec.push({G:W,M:mul(M,trs(2,1,0,0,0,0,.62,1,.62)),c:[1,.82,.38,.9],add:true});}
