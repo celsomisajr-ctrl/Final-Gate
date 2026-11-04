@@ -618,8 +618,8 @@ const SKILLS={
     cast(){const p=game.p;p.buffs.haste=4;p.hasteMul=2;}},
   roll:{name:'Combat Roll',cost:10,cd:6,desc:()=>`Roll away (or the way you're moving). Your next 3 shots deal 50% more and always crit.`,
     cast(){startDash(aim(true),180,0.2);game.p.empower=3;}},
-  bullet:{name:'Bullet Storm',ult:true,cost:60,cd:40,desc:d=>`Kneel and unload 30 rounds over 3 seconds, ${dmg(d,8,0.34,0)} damage each. You can't move or use your skill while firing, but take 25% less damage. Every hit slows the boss's movement and attacks by 40%.`,
-    cast(){const p=game.p;p.buffs.anchor=3.05;p.dash=null;for(let k=0;k<30;k++)later(k*0.1,()=>{const pl=game.p;const t=dirTo(pl,game.b),a=Math.atan2(t.y,t.x)+rand(-0.06,0.06);pl.muzzle=0.06;pl.mside=-(pl.mside||1);SFX.play('bullet');shoot({vx:Math.cos(a)*850,vy:Math.sin(a)*850,dmg:dmg(game.d,8,0.34,0),r:4,kind:'bullet',color:'#ffe0a0',life:1,canCrit:true,supp:true});});}},
+  bullet:{name:'Bullet Storm',ult:true,cost:60,cd:40,desc:d=>`Kneel and unload 30 rounds over 3 seconds, ${dmg(d,8,0.34,0)} damage each. You can't move or use your skill while firing, but take 25% less damage, and your shots reach the boss anywhere in the arena. Every hit slows the boss's movement and attacks by 40%.`,
+    cast(){const p=game.p;p.buffs.anchor=3.05;p.dash=null;for(let k=0;k<30;k++)later(k*0.1,()=>{const pl=game.p;const t=dirTo(pl,game.b),a=Math.atan2(t.y,t.x)+rand(-0.06,0.06);pl.muzzle=0.06;pl.mside=-(pl.mside||1);SFX.play('bullet');shoot({vx:Math.cos(a)*850,vy:Math.sin(a)*850,dmg:dmg(game.d,8,0.34,0),r:4,kind:'bullet',color:'#ffe0a0',life:3,canCrit:true,supp:true,homing:true});});}},
 
   charge:{name:'Charge Punch',cost:20,cd:7,range:260,desc:d=>`Rush at the boss and punch for ${dmg(d,50,1.3,0)} damage, stunning it for 0.6 seconds.`,
     cast(){const p=game.p,b=game.b;const len=Math.min(280,Math.max(60,dist(p,b)-b.r));startDash(dirTo(p,b),len+20,0.22,()=>{hitBoss(dmg(game.d,50,1.3,0),{canCrit:true});stunBoss(0.6);burst(b.x,b.y,'#ff8fb0',16,240);shake(4);},true);}},
@@ -758,7 +758,7 @@ function basicAttack(){
   p.swingT=0.24;let mul=1,force=false;if(p.empower>0){p.empower--;mul=1.5;force=true;}
   const base=(g.key==='shaman'?d.atk+d.power*0.35:d.atk)*mul;
   if(!c.ranged){SFX.play('swing');hitBoss(base*c.meleeMul,{canCrit:true,force});addStagger();const t=dirTo(p,b);fx({type:'slash',x:p.x+t.x*(p.r+18),y:p.y+t.y*(p.r+18),ang:Math.atan2(t.y,t.x)+Math.PI/2,r:26,color:hexA(c.color,1),dur:0.18});}
-  else{SFX.play(c.proj.kind);const t=dirTo(p,b);shoot({vx:t.x*c.proj.speed,vy:t.y*c.proj.speed,dmg:base,canCrit:true,force,r:c.proj.r+(force?2:0),kind:c.proj.kind,color:force?'#ffe08a':c.color,life:1.6});}
+  else{SFX.play(c.proj.kind);const t=dirTo(p,b);shoot({vx:t.x*c.proj.speed,vy:t.y*c.proj.speed,dmg:base,canCrit:true,force,r:c.proj.r+(force?2:0),kind:c.proj.kind,color:force?'#ffe08a':c.color,life:p.buffs.anchor?3:1.6,homing:!!p.buffs.anchor});}
 }
 
 /* ---------- update ---------- */
@@ -819,7 +819,7 @@ function updatePlayer(dt){
   p.x=clamp(p.x,22,g.W-22);p.y=clamp(p.y,22,g.H-22);
   p.face=Math.atan2(b.y-p.y,b.x-p.x);
   p.atkT-=dt;
-  if(p.atkT<=0&&!b.dead&&dist(p,b)-p.r-b.r<=d.range){basicAttack();p.atkT=1/(d.aps*(p.buffs.haste?p.hasteMul:1));}
+  if(p.atkT<=0&&!b.dead&&(p.buffs.anchor||dist(p,b)-p.r-b.r<=d.range)){basicAttack();p.atkT=1/(d.aps*(p.buffs.haste?p.hasteMul:1));}
 }
 function updateBoss(dt){
   const g=game,p=g.p,b=g.b;if(b.dead)return;
@@ -882,6 +882,7 @@ function updateHaz(dt){
 function updateShots(dt){
   const g=game,b=g.b,p=g.p;
   for(const s of g.shots){
+    if(s.homing&&!b.dead){const sp=Math.hypot(s.vx,s.vy),t2=dirTo(s,b),k=Math.min(1,dt*12);s.vx+=(t2.x*sp-s.vx)*k;s.vy+=(t2.y*sp-s.vy)*k;const n=Math.hypot(s.vx,s.vy)||1;s.vx*=sp/n;s.vy*=sp/n;}
     s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
     if((s.kind==='phoenix'||s.kind==='wave'||s.kind==='spirit')&&g.parts.length<700&&Math.random()<0.7)g.parts.push({x:s.x+rand(-s.r/2,s.r/2),y:s.y+rand(-s.r/2,s.r/2),vx:-s.vx*0.05,vy:-s.vy*0.05,color:s.color,size:rand(2,Math.max(2.5,s.r/3)),t:0,dur:0.35});
     if(!s.done&&!b.dead&&dist(s,b)<s.r+b.r){s.done=true;if(s.supp){if(!(b.suppT>0))text(b.x,b.y-b.r-30,'Suppressed','#ffd08a',14);b.suppT=0.6;}hitBoss(s.dmg,{canCrit:s.canCrit,force:s.force});burst(s.x,s.y,s.color,s.r>12?18:6,s.r>12?220:120,2.5,0.35);if(!s.pierce)s.life=0;}
@@ -1330,7 +1331,7 @@ function render3D(){
     Hh.shield.hidden=!(p.shield>0);Hh.shield.a=.16+.07*Math.sin(t*8);
     drawNode(Hh.root,E.I,p.hurt>0?[.55,.06,.06]:(p.iframe>0&&!p.leap?[.2,.2,.26]:null));
     decal(G.disc,p.x+SHX*(8+lift)*.5,p.y+SHZ*(8+lift)*.5,15,15,0,'#000000',.4,.3);
-    const inR=!b.dead&&dist(p,b)-p.r-b.r<=g.d.range,rr=p.r+g.d.range;
+    const inR=!b.dead&&(p.buffs.anchor||dist(p,b)-p.r-b.r<=g.d.range),rr=p.r+g.d.range;
     decal(G.thin,p.x,p.y,rr,rr,0,g.c.color,inR?.55:.22,.9,true);
     if(p.empower>0)decal(G.ring,p.x,p.y,24,24,0,'#ffe08a',.8,1.1,true);
     if(p.slowT>0)decal(G.ring,p.x,p.y,22,22,0,'#9fd0ff',.7,1.1,true);
@@ -1470,7 +1471,7 @@ function updateHud(){
   hud.hpT.textContent=`${Math.ceil(p.hp)} / ${d.maxHp}`;
   hud.mp.style.width=(clamp(p.mp/d.maxMp,0,1)*100).toFixed(2)+'%';
   hud.mpT.textContent=`${Math.floor(p.mp)} / ${d.maxMp}`;
-  const gap=dist(p,b)-p.r-b.r;hud.hint.textContent=b.dead||g.over?'':gap<=d.range?'In range':'Out of range';
+  const gap=dist(p,b)-p.r-b.r;hud.hint.textContent=b.dead||g.over?'':p.buffs.anchor?'Locked on':gap<=d.range?'In range':'Out of range';
   {const iv=1/(d.aps*(p.buffs.haste?p.hasteMul:1)),inR=dist(p,b)-p.r-b.r<=d.range&&!b.dead;hud.basic.style.setProperty('--cd',inR?clamp(p.atkT/iv,0,1).toFixed(3):'0');hud.basic.classList.toggle('idle',!inR);}
   hud.sk.forEach((s,i)=>{const cd=g.cds[i];s.btn.style.setProperty('--cd',cd>0?(cd/g.cdMax[i]).toFixed(3):'0');const txt=cd>0?String(Math.ceil(cd)):'';if(s.cd.textContent!==txt)s.cd.textContent=txt;s.btn.classList.toggle('nomana',p.mp<s.cost);});
   const chips=[];
