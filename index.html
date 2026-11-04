@@ -539,7 +539,7 @@ function recordText(){return `Attempts ${store.attempts} · Victories ${store.wi
 
 /* ---------- sound (synthesized with Web Audio, no files) ---------- */
 const SFX=(()=>{
-  let ac=null,master=null,nb=null,voices=0;const last={};
+  let ac=null,master=null,nb=null,voices=0,cueId=0;const last={};
   const GAP={hit:.05,crit:.05,shieldHit:.06,swing:.08,arrow:.04,bullet:.045,spirit:.05,hurt:.1,sizzle:.25,warn:.12,boom:.07,splat:.1,bossShot:.12,dodge:.15,bolt:.08,deny:.12,tick:.03,click:.05,stun:.2,reveal:.3,punch:.04,hook:.06};
   // Temporary, opt-in diagnostics: ?sfxdebug=1. No message/game data is collected.
   const debug=new URLSearchParams(location.search).get('sfxdebug')==='1',events=[];
@@ -551,15 +551,46 @@ const SFX=(()=>{
   function errorInfo(e){return {name:e&&e.name||'Error',message:e&&e.message||String(e)};}
   if(debug)window.__finalGateSFX={events,snapshot:()=>({state:ac?ac.state:'none',audioTime:ac?ac.currentTime:null,muted:!!store.muted,sampleRate:ac?ac.sampleRate:null,audioSession:navigator.audioSession?navigator.audioSession.type:null,masterGain:master?master.gain.value:null,baseLatency:ac?ac.baseLatency:null,outputLatency:ac?ac.outputLatency:null,hardwareMute:'not observable by Web Audio'})};
   function init(reason='init',event){
+    const gesture=!!(event&&event.isTrusted);
     trace('init',{reason,trusted:event?event.isTrusted:null,pointerType:event&&event.pointerType});
     if(debug)setTimeout(()=>trace('context-check',{reason}),250);
-    if(ac){if(ac.state==='suspended'){trace('resume-request',{reason});try{ac.resume().then(()=>trace('resume-success',{reason}),e=>trace('resume-failure',{reason,...errorInfo(e)}));}catch(e){trace('resume-failure',{reason,...errorInfo(e)});}}return;}
-    const AC=window.AudioContext||window.webkitAudioContext;if(!AC){trace('unsupported');return;}
-    try{ac=new AC();trace('created');ac.addEventListener('statechange',()=>trace('statechange'));}catch(e){trace('create-failure',errorInfo(e));return;}
-    master=ac.createGain();master.gain.value=0.6;
-    const comp=ac.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=6;
-    master.connect(comp);comp.connect(ac.destination);
-    nb=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    if(!ac){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC){trace('unsupported');return Promise.resolve(false);}
+      try{
+        ac=new AC();trace('created');ac.addEventListener('statechange',()=>trace('statechange'));
+        master=ac.createGain();master.gain.value=0.6;
+        const comp=ac.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=6;
+        master.connect(comp);comp.connect(ac.destination);
+        nb=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);
+        const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+      }catch(e){trace('create-failure',errorInfo(e));return Promise.resolve(false);}
+    }
+    if(ac.state==='running')return Promise.resolve(true);
+    if(ac.state!=='suspended'&&ac.state!=='interrupted'){
+      trace('resume-skipped',{reason});return Promise.resolve(false);
+    }
+    // Resume and start the silent frame synchronously, before leaving the user gesture.
+    // Never replace the context or cache a pending resume: another tap can retry it.
+    if(!gesture){trace('resume-skipped',{reason,detail:'requires-direct-gesture'});return Promise.resolve(false);}
+    trace('resume-request',{reason});
+    try{
+      const resumed=ac.resume();
+      try{
+        const silent=ac.createBufferSource();silent.buffer=ac.createBuffer(1,1,ac.sampleRate);
+        silent.connect(master);silent.onended=()=>silent.disconnect();silent.start(0);
+        trace('unlock-frame',{reason});
+      }catch(e){trace('unlock-frame-failure',{reason,...errorInfo(e)});}
+      return Promise.resolve(resumed).then(()=>{
+        trace('resume-success',{reason});return ac.state==='running';
+      },e=>{trace('resume-failure',{reason,...errorInfo(e)});return false;});
+    }catch(e){trace('resume-failure',{reason,...errorInfo(e)});return Promise.resolve(false);}
+  }
+  function cue(n,reason,event){
+    // Only control feedback waits for resume; combat sounds are never queued.
+    const id=++cueId,requested=performance.now(),ready=init(reason,event);
+    if(ac&&ac.state==='running'){api.play(n);return;}
+    ready.then(ok=>{if(ok&&id===cueId&&!document.hidden&&performance.now()-requested<1000)api.play(n);});
   }
   function env(g,t,vol,a,dur){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);}
   function tone(o){
@@ -611,8 +642,8 @@ const SFX=(()=>{
     win(){[392,523,659,784].forEach((f,i)=>tone({type:'triangle',f,dur:i===3?1.2:.18,vol:.18,d:i*.13}));[523,659,784].forEach(f=>tone({type:'sine',f,dur:1.2,vol:.06,d:.52}));},
     lose(){tone({type:'sawtooth',f:220,f2:98,dur:1.5,vol:.12,lp:900,a:.03});tone({type:'sawtooth',f:165,f2:73,dur:1.6,vol:.09,lp:700,a:.05,d:.1});tone({f:55,f2:35,dur:1.4,vol:.35});},
   };
-  return{
-    init,trace,
+  const api={
+    init,cue,trace,
     play(n){
       trace('play-attempt',{sound:n});
       if(store.muted||!ac||ac.state!=='running'||!L[n]){trace('play-skipped',{sound:n,reason:store.muted?'muted':!ac?'no-context':ac.state!=='running'?'context-not-running':'unknown-sound'});return;}
@@ -621,10 +652,13 @@ const SFX=(()=>{
       try{L[n]();trace('play-scheduled',{sound:n});}catch(e){trace('play-failure',{sound:n,...errorInfo(e)});}
     }
   };
+  return api;
 })();
-addEventListener('pointerdown',e=>SFX.init('pointerdown',e),true);
+addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')SFX.init('pointerdown',e);},true);
+addEventListener('touchend',e=>SFX.init('touchend',e),{capture:true,passive:true});
+addEventListener('click',e=>SFX.init('click',e),true);
 addEventListener('keydown',e=>SFX.init('keydown',e),true);
-// Observe activation events without attempting a new unlock in this diagnosis build.
+// Temporary activation/lifecycle diagnostics; no automatic background playback.
 if(new URLSearchParams(location.search).get('sfxdebug')==='1'){
   ['pointerup','touchend','click'].forEach(type=>addEventListener(type,e=>SFX.trace('gesture',{type,trusted:e.isTrusted,pointerType:e.pointerType}),{capture:true,passive:true}));
   document.addEventListener('visibilitychange',()=>SFX.trace('visibilitychange'));
@@ -2053,7 +2087,8 @@ function openIntro(){
   show('s-intro');
 }
 $('#i-fight').addEventListener('click',startFight);
-$('#i-full').addEventListener('click',async()=>{
+$('#i-full').addEventListener('click',async e=>{
+  SFX.init('fullscreen-start',e);
   try{await document.documentElement.requestFullscreen();}catch(e){}
   try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){}
   setTimeout(()=>{applyML();startFight();},250);
@@ -2064,8 +2099,8 @@ if(mlMQ.addEventListener)mlMQ.addEventListener('change',applyML);else if(mlMQ.ad
 addEventListener('orientationchange',()=>setTimeout(applyML,200));
 applyML();
 
-function startFight(){
-  SFX.init();SFX.play('start');
+function startFight(event){
+  SFX.cue('start','start-game',event);
   store.attempts++;save();
   show('s-fight');
   const mlm=document.body.classList.contains('ml'),ar=$('#arena'),narrow=!mlm&&ar.clientWidth<640;
@@ -2111,7 +2146,7 @@ function syncAuto(){const on=store.autoMove!==false,bt=$('#auto-btn');bt.setAttr
 $('#auto-btn').addEventListener('click',()=>{store.autoMove=store.autoMove===false;save();syncAuto();});
 syncAuto();
 function syncSound(){const on=!store.muted;document.querySelectorAll('.snd-btn').forEach(b=>{b.setAttribute('aria-pressed',String(on));b.title=on?'Sound is on':'Sound is off';const i=b.querySelector('.snd-ico');if(i)i.innerHTML=uiIcon(on?'sound':'mute');});}
-document.querySelectorAll('.snd-btn').forEach(b=>b.addEventListener('click',()=>{store.muted=!store.muted;SFX.trace('mute-change');save();syncSound();if(!store.muted){SFX.init();setTimeout(()=>SFX.play('click'),30);}}));
+document.querySelectorAll('.snd-btn').forEach(b=>b.addEventListener('click',e=>{store.muted=!store.muted;SFX.trace('mute-change');save();syncSound();if(!store.muted)SFX.cue('click','sound-on',e);}));
 syncSound();
 function sync3D(){const b=$('#d3-btn');b.setAttribute('aria-pressed',String(!store.no3d));}
 $('#d3-btn').addEventListener('click',()=>{store.no3d=!store.no3d;save();sync3D();const g=game;if(!g)return;

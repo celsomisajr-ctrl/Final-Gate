@@ -1,0 +1,13 @@
+{
+  "base": "5a79169",
+  "onlyProductFile": "index.html",
+  "onlyChangedSections": [
+    "SFX module and gesture listeners",
+    "SOUND click handler",
+    "Fight initial SFX call and event parameter",
+    "Full-screen initial SFX call before await"
+  ],
+  "allOtherHtmlCssGameplayBytesIdentical": true,
+  "audioSessionPolicyUnchanged": true,
+  "singleAudioContextConstructor": true
+}
