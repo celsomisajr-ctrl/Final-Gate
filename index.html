@@ -583,7 +583,7 @@ const SKILLS={
   guard:{name:'Iron Guard',cost:30,cd:14,desc:d=>`Raise a shield that absorbs ${Math.round(d.maxHp*0.28)} damage for 4 seconds.`,
     cast(){const p=game.p;SFX.play('shield');p.shield=game.d.maxHp*0.28;p.shieldT=4;fx({type:'ring',x:p.x,y:p.y,r0:10,r1:44,color:'#9fd0ff',dur:0.4,w:4});}},
   rising:{name:'Rising Blade',cost:25,cd:9,range:55,desc:d=>`Uppercut a boss in reach for ${dmg(d,50,1.25,0)} damage and stun it for 1.2 seconds. Stuns cancel its wind-up.`,
-    cast(){const p=game.p;p.rise=0.4;p.castT2=0;later(0.17,()=>{const g=game,b=g.b;if(b.dead)return;hitBoss(dmg(g.d,50,1.25,0),{canCrit:true});stunBoss(1.2);fx({type:'slash',x:b.x,y:b.y,ang:-Math.PI/2,r:b.r+40,color:'#bff4ff'});burst(b.x,b.y,'#bff4ff',18,240);shake(6);SFX.play('crit');(g.spirit||(g.spirit=[])).push({x:b.x,y:b.y,t:0});});}},
+    cast(){const p=game.p;p.rise=0.4;p.castT2=0;later(0.17,()=>{const g=game,b=g.b;if(b.dead)return;hitBoss(dmg(g.d,50,1.25,0),{canCrit:true});stunBoss(1.2);fx({type:'slash',x:b.x,y:b.y,ang:-Math.PI/2,r:b.r+40,color:'#bff4ff'});burst(b.x,b.y,'#bff4ff',18,240);shake(6);SFX.play('crit');(g.spirit||(g.spirit=[])).push({x:b.x,y:b.y,t:0,f:Math.atan2(b.y-g.p.y,b.x-g.p.x)});});}},
   judgement:{name:'Judgement Blade',ult:true,cost:60,cd:40,desc:d=>`Call down a giant blade of light that follows the boss and strikes it from above for ${dmg(d,200,4,0)} damage, cracking the arena floor.`,
     cast(){const b=game.b;(game.swords||(game.swords=[])).push({x:b.x,y:b.y,t:0,fall:.62,stay:1.4,dmg:dmg(game.d,200,4,0),hit:false});shake(3);}},
 
@@ -591,12 +591,12 @@ const SKILLS={
     cast(){shoot(Object.assign(toward(480),{dmg:dmg(game.d,40,0,1.3),r:11,kind:'spirit',color:'#62f0dc'}));}},
   totem:{name:'Healing Totem',cost:40,cd:16,desc:d=>`Plant a totem. While you stand near it you restore ${Math.round(d.maxHp*0.045+d.power*0.3)} health per second for 5 seconds.`,
     cast(){const p=game.p;SFX.play('heal');game.totems.push({x:p.x,y:p.y,t:5,r:140});}},
-  thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Mark the boss's spot. Lightning strikes it 0.7s later for ${dmg(d,80,0,2.2)} damage.`,
-    cast(){const b=game.b;zone({x:b.x,y:b.y,r:95,delay:0.7,dmg:dmg(game.d,80,0,2.2),color:'#ffe066',bolt:true});}},
+  thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Charge your staff and hurl a bolt of lightning into the boss for ${dmg(d,80,0,2.2)} damage.`,
+    cast(){const p=game.p;p.charge=.28;p.castT2=.5;later(.28,()=>{const g=game,b=g.b;if(b.dead)return;SFX.play('bolt');shake(5);hitBoss(dmg(g.d,80,0,2.2),{canCrit:true});burst(b.x,b.y,'#fff3a0',18,260);(g.sbolts||(g.sbolts=[])).push({t:0,dur:.32});});}},
   hex:{name:'Hex',cost:30,cd:12,range:420,desc:()=>`Curse the boss for 4 seconds. It takes 25% more damage from everything and moves 40% slower.`,
     cast(){const b=game.b;b.vulnT=4;b.slowT=4;text(b.x,b.y-b.r-26,'Hexed','#c99bff',14);burst(b.x,b.y,'#c99bff',16,140);}},
-  storm:{name:'Ancestral Storm',ult:true,cost:70,cd:40,desc:d=>`Eight lightning bolts strike the boss over 4 seconds, ${dmg(d,30,0,0.95)} damage each.`,
-    cast(){for(let k=0;k<8;k++)later(k*0.5,()=>{const b=game.b;SFX.play('bolt');fx({type:'bolt',x:b.x+rand(-20,20),y:b.y,color:'#bff6ff',dur:0.25});hitBoss(dmg(game.d,30,0,0.95),{canCrit:true});shake(2);});}},
+  storm:{name:'Ancestral Storm',ult:true,cost:70,cd:40,desc:d=>`Summon a storm that chains the boss to the sky with lightning for 4 seconds, striking 8 times for ${dmg(d,30,0,0.95)} damage each.`,
+    cast(){const g=game;g.storm={t:0,dur:4.1,pulse:0};for(let k=0;k<8;k++)later(k*0.5,()=>{const b=game.b;if(b.dead)return;SFX.play('bolt');if(game.storm)game.storm.pulse=1;burst(b.x,b.y,'#bff6ff',10,200);hitBoss(dmg(game.d,30,0,0.95),{canCrit:true});shake(2);});}},
 
   pierce:{name:'Piercing Arrow',cost:20,cd:5,desc:d=>`Loose a heavy arrow for ${dmg(d,70,1.6,0)} damage.`,
     cast(){shoot(Object.assign(toward(900),{dmg:dmg(game.d,70,1.6,0),r:7,kind:'arrow',color:'#d7ff9e',canCrit:true,pierce:true}));}},
@@ -791,6 +791,9 @@ function update(dt){
   for(let i=g.timers.length-1;i>=0;i--){const tm=g.timers[i];tm.t-=dt;if(tm.t<=0){g.timers.splice(i,1);if(!g.over)tm.fn();}}
   if(!g.over){updatePlayer(dt);updateBoss(dt);}
   updateShots(dt);updateZones(dt);updateHaz(dt);updateSwords(dt);
+  if(g.sbolts&&g.sbolts.length){for(const q of g.sbolts)q.t+=dt;g.sbolts=g.sbolts.filter(q=>q.t<q.dur);}
+  if(g.storm){g.storm.t+=dt;g.storm.pulse=Math.max(0,g.storm.pulse-dt*4);if(g.storm.t>g.storm.dur||g.b.dead)g.storm=null;}
+  p.charge=Math.max(0,(p.charge||0)-dt);
   for(const t of g.totems){t.t-=dt;if(!g.over&&dist(t,p)<t.r)healPlayer((g.d.maxHp*0.045+g.d.power*0.3)*dt);}
   g.totems=g.totems.filter(t=>t.t>0);
   g.thornT-=dt;
@@ -1012,6 +1015,8 @@ function render(){
     ctx.strokeStyle=`rgba(6,4,10,${.9*fade})`;for(const sg of c.seg){if(sg[5]>rev)continue;ctx.lineWidth=sg[4]*.6;ctx.beginPath();ctx.moveTo(sg[0],sg[1]);ctx.lineTo(sg[2],sg[3]);ctx.stroke();}
     if(gl2>0){ctx.strokeStyle=`rgba(255,207,107,${gl2})`;for(const sg of c.seg){if(sg[5]>rev)continue;ctx.lineWidth=sg[4]*.25;ctx.beginPath();ctx.moveTo(sg[0],sg[1]);ctx.lineTo(sg[2],sg[3]);ctx.stroke();}}ctx.restore();}
   drawBoss(ctx,g);
+  if(g.sbolts)for(const q of g.sbolts){ctx.save();ctx.strokeStyle=`rgba(255,240,150,${1-q.t/q.dur})`;ctx.lineWidth=4;ctx.shadowColor='#ffe066';ctx.shadowBlur=14;ctx.beginPath();let x=g.p.x,y=g.p.y;ctx.moveTo(x,y);for(let i=1;i<=8;i++){const u=i/8;x=g.p.x+(g.b.x-g.p.x)*u+(i<8?rand(-14,14):0);y=g.p.y+(g.b.y-g.p.y)*u+(i<8?rand(-14,14):0);ctx.lineTo(x,y);}ctx.stroke();ctx.restore();}
+  if(g.storm&&!g.b.dead){ctx.save();ctx.strokeStyle='rgba(191,246,255,.9)';ctx.lineWidth=3+g.storm.pulse*4;ctx.shadowColor='#bff6ff';ctx.shadowBlur=16;ctx.beginPath();let x=g.b.x,y=g.b.y-420;ctx.moveTo(x,y);while(y<g.b.y){y+=rand(26,44);x=g.b.x+rand(-18,18);ctx.lineTo(x,Math.min(y,g.b.y));}ctx.stroke();ctx.restore();}
   for(const s of (g.swords||[])){const k=clamp(s.t/s.fall,0,1),yy=s.y-(s.hit?0:(1-k*k)*420);ctx.save();ctx.globalAlpha=s.hit?clamp(1-(s.t-s.fall)/s.stay,0,1):1;
     ctx.shadowColor='#ffe08a';ctx.shadowBlur=20;ctx.fillStyle='#e9eefc';ctx.fillRect(s.x-7,yy-170,14,160);ctx.beginPath();ctx.moveTo(s.x-7,yy-10);ctx.lineTo(s.x+7,yy-10);ctx.lineTo(s.x,yy+6);ctx.fill();
     ctx.fillStyle='#f2b64b';ctx.fillRect(s.x-30,yy-178,60,9);ctx.fillRect(s.x-4,yy-210,8,32);ctx.restore();
@@ -1392,20 +1397,39 @@ function spirit3D(g,rdt){if(!g.spirit||!g.spirit.length)return;
   const fl=E.bfl||60;
   for(let i=g.spirit.length-1;i>=0;i--){const q=g.spirit[i];q.t+=rdt;if(q.t>.8){g.spirit.splice(i,1);continue;}
     const sw=Math.min(1,q.t/.3),e=1-Math.pow(1-sw,3),a=q.t<.4?1:1-(q.t-.4)/.4,A0=-1.25,A1=.38,ang=A0+(A1-A0)*e;
-    const P=[q.x-34,-14,q.y+8],L=270,tipOf=an=>[P[0]+Math.sin(an)*L,P[1]+Math.cos(an)*L,P[2]],midOf=an=>[P[0]+Math.sin(an)*L*.55,P[1]+Math.cos(an)*L*.55,P[2]];
+    const f0=q.f??-Math.PI/2,F=[Math.cos(f0),Math.sin(f0)],Sd=[-F[1],F[0]],P=[q.x-Sd[0]*34-F[0]*8,-14,q.y-Sd[1]*34-F[1]*8],L=270;
+    const tipOf=an=>[P[0]+Sd[0]*Math.sin(an)*L,P[1]+Math.cos(an)*L,P[2]+Sd[1]*Math.sin(an)*L],midOf=an=>[P[0]+Sd[0]*Math.sin(an)*L*.55,P[1]+Math.cos(an)*L*.55,P[2]+Sd[1]*Math.sin(an)*L*.55];
     /* crescent left by the sweep */
     const from=Math.max(A0,ang-1.25),N=20;let pt=null,pm=null;
     for(let k=0;k<=N;k++){const an=from+(ang-from)*k/N,t2=tipOf(an),m2=midOf(an),al=(k/N)*a;
       if(pt){beam(pt,t2,40,'#7fe0ff',al*.45);beam(pt,t2,12,'#bff4ff',al*.85);beam(pt,t2,4,'#ffffff',al);beam(pm,m2,22,'#9fe8ff',al*.3);}pt=t2;pm=m2;}
     /* the spirit blade */
-    const d=[Math.sin(ang),Math.cos(ang),0],n=[Math.cos(ang),-Math.sin(ang),0],tip=tipOf(ang),base=[P[0]+d[0]*8,P[1]+d[1]*8,P[2]];
+    const d=[Sd[0]*Math.sin(ang),Math.cos(ang),Sd[1]*Math.sin(ang)],n=[Sd[0]*Math.cos(ang),-Math.sin(ang),Sd[1]*Math.cos(ang)],tip=tipOf(ang),base=[P[0]+d[0]*8,P[1]+d[1]*8,P[2]+d[2]*8];
     beam(base,tip,36,'#7fe0ff',.42*a);beam(base,tip,16,'#bff4ff',.85*a);beam(base,tip,5,'#ffffff',a);
-    beam([base[0]-n[0]*40,base[1]-n[1]*40,base[2]],[base[0]+n[0]*40,base[1]+n[1]*40,base[2]],9,'#9fe8ff',.9*a);
-    beam(base,[P[0]-d[0]*40,P[1]-d[1]*40,P[2]],7,'#9fe8ff',.8*a);
+    beam([base[0]-n[0]*40,base[1]-n[1]*40,base[2]-n[2]*40],[base[0]+n[0]*40,base[1]+n[1]*40,base[2]+n[2]*40],9,'#9fe8ff',.9*a);
+    beam(base,[P[0]-d[0]*40,P[1]-d[1]*40,P[2]-d[2]*40],7,'#9fe8ff',.8*a);
     spr(tip[0],tip[1],tip[2],40,40,'#ffffff',.8*a);
     /* impact on the boss as the blade passes through */
     if(q.t<.28){const f=1-q.t/.28;spr(q.x,fl,q.y,160*f+40,160*f+40,'#bff4ff',f);decal(E.G.ring,q.x,q.y,40+q.t*380,40+q.t*380,0,'#bff4ff',f*.8,.9,true);}
-    if(Math.random()<.8){const u=rand(.3,1),pp=[P[0]+d[0]*L*u,P[1]+d[1]*L*u,P[2]];ep({x:pp[0],y:Math.max(4,pp[1]),z:pp[2],vx:n[0]*rand(40,120),vy:rand(20,120),vz:rand(-30,30),dur:.5,s:8,c:'#bff4ff',a:.9});}}
+    if(Math.random()<.8){const u=rand(.3,1),pp=[P[0]+d[0]*L*u,P[1]+d[1]*L*u,P[2]+d[2]*L*u];ep({x:pp[0],y:Math.max(4,pp[1]),z:pp[2],vx:n[0]*rand(40,120),vy:rand(20,120),vz:n[2]*rand(40,120),dur:.5,s:8,c:'#bff4ff',a:.9});}}
+}
+function zig(A,B,n,amp){const pts=[];const dx=B[0]-A[0],dy=B[1]-A[1],dz=B[2]-A[2];for(let i=0;i<=n;i++){const u=i/n,j=(i===0||i===n)?0:amp*Math.sin(u*Math.PI);pts.push([A[0]+dx*u+rand(-j,j),A[1]+dy*u+rand(-j,j)*.6,A[2]+dz*u+rand(-j,j)]);}return pts;}
+function drawZig(pts,c,a,w){for(let i=0;i<pts.length-1;i++){beam(pts[i],pts[i+1],w*3,c,a*.45);beam(pts[i],pts[i+1],w,c,a);beam(pts[i],pts[i+1],w*.4,'#ffffff',a);}}
+function lightning3D(g,rdt,t,fl){const b=g.b,p=g.p,now=performance.now();
+  /* Thunder Call: one bolt from the staff */
+  if(g.sbolts)for(const q of g.sbolts){const a=1-q.t/q.dur,A=E.orbW||[p.x,50,p.y],B=[b.x,fl,b.y];
+    if(!q.pts||now>q.nt){q.nt=now+40;q.pts=zig(A,B,14,26);q.br=zig(q.pts[5],[q.pts[5][0]+rand(-50,50),q.pts[5][1]+rand(-30,30),q.pts[5][2]+rand(-50,50)],5,10);}
+    drawZig(q.pts,'#ffe066',a,7);drawZig(q.br,'#ffe066',a*.7,3.5);
+    spr(A[0],A[1],A[2],70*a,70*a,'#fff3a0',a);spr(B[0],B[1],B[2],150*a,150*a,'#fff3a0',a);E.flash=Math.max(E.flash,a*.9);}
+  /* Ancestral Storm: continuous tether from the sky */
+  const st=g.storm;if(st&&!b.dead){const a=Math.min(1,st.t/.25,(st.dur-st.t)/.3),pu=st.pulse,top=[b.x+Math.sin(t*1.3)*18,310,b.y-45+Math.cos(t)*14],B=[b.x,fl+10,b.y];
+    for(let i=0;i<9;i++){const an=t*.8+i*TAU/9,r=70+Math.sin(t*2+i)*16;spr(top[0]+Math.cos(an)*r,top[1]+12+Math.sin(t*3+i)*10,top[2]+Math.sin(an)*r*.6,150,90,i%2?'#3a4a6a':'#5a6a8a',.55*a);}
+    spr(top[0],top[1],top[2],220,140,'#bff6ff',(.25+.5*pu)*a);
+    if(!st.pts||now>st.nt){st.nt=now+35;st.pts=zig(top,B,18,30);st.p2=zig(top,B,18,22);st.arcs=[];for(let i=0;i<3;i++){const s0=st.pts[3+Math.floor(rand(0,12))];st.arcs.push(zig(s0,[s0[0]+rand(-60,60),s0[1]+rand(-40,20),s0[2]+rand(-60,60)],4,10));}}
+    drawZig(st.pts,'#bff6ff',a*(.8+.2*pu),9+pu*6);drawZig(st.p2,'#9fd8ff',a*.45,3);for(const r of st.arcs)drawZig(r,'#bff6ff',a*.6,2.5);
+    spr(B[0],B[1],B[2],120+pu*90,120+pu*90,'#bff6ff',a*(.6+.4*pu));decal(E.G.disc,b.x,b.y,70+pu*30,70+pu*30,0,'#bff6ff',.25*a+.25*pu,.8,true);
+    if(pu>.85)E.flash=Math.max(E.flash,.7);
+    if(Math.random()<.6)ep({x:B[0]+rand(-30,30),y:B[1]+rand(-30,30),z:B[2]+rand(-30,30),vx:rand(-120,120),vy:rand(-60,120),vz:rand(-120,120),g:-300,dur:.3,s:5,c:'#fff3a0',spark:1});}
 }
 function legSeg(w,L){return geo('seg'+w+'_'+L,()=>gT(boxS(w,L,w),0,-L/2,0));}
 function buildFeet(root,el,ftype,fl){
@@ -1598,7 +1622,7 @@ function render3D(){
     decal(G.thin,p.x,p.y,rr,rr,0,g.c.color,inR?.55:.22,.9,true);
     if(p.empower>0)decal(G.ring,p.x,p.y,24,24,0,'#ffe08a',.8,1.1,true);
     if(p.slowT>0)decal(G.ring,p.x,p.y,22,22,0,'#9fd0ff',.7,1.1,true);
-    if(Hh.orb){const c=Math.cos(E.face),s=Math.sin(E.face),o=Hh.orb.map(v=>v*1.22);spr(p.x+o[0]*c-o[2]*s,lift+o[1]+Hh.body.y,p.y+o[0]*s+o[2]*c,24,24,g.c.color,.7);}
+    if(Hh.orb){const c=Math.cos(E.face),s=Math.sin(E.face),o=Hh.orb.map(v=>v*1.22);E.orbW=[p.x+o[0]*c-o[2]*s,lift+o[1]+Hh.body.y,p.y+o[0]*s+o[2]*c];if(p.charge>0){const ch=1-p.charge/.28;spr(E.orbW[0],E.orbW[1],E.orbW[2],30+ch*40,30+ch*40,'#fff3a0',.6+ch*.4);for(let i=0;i<2;i++){const a=rand(0,TAU),r=rand(14,30);beam(E.orbW,[E.orbW[0]+Math.cos(a)*r,E.orbW[1]+rand(-12,18),E.orbW[2]+Math.sin(a)*r],2,'#fff3a0',.9);}}spr(p.x+o[0]*c-o[2]*s,lift+o[1]+Hh.body.y,p.y+o[0]*s+o[2]*c,24,24,g.c.color,.7);}
   }
   /* boss */
   const B=S.boss;B.root.hidden=b.dead;
@@ -1623,6 +1647,7 @@ function render3D(){
   drawElemFX(g,rdt,t,E.bfl||60);
   grenades3D(g,rdt,t);
   spirit3D(g,rdt);
+  lightning3D(g,rdt,t,E.bfl||60);
   drawSwords3D(g,t);
   /* totems */
   for(const tt of g.totems){lit(geo('tpole',()=>cylG(2.5,3.5,34,6)),trs(tt.x,17,tt.y,0,0,0,1,1,1),[.9,1,.98],[0,0,0],1);flat(G.sph,trs(tt.x,40,tt.y,0,0,0,7,7,7),[.38,.94,.86,1],null,1);
