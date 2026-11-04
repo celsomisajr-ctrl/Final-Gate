@@ -457,7 +457,7 @@ body.ml .sk:nth-child(3){right:0; bottom:0; width:56px; height:56px; background:
         <div class="bb-right"><span class="bb-time" id="bb-time">0:00</span><button class="auto-btn snd-btn" type="button" aria-pressed="true"><span class="snd-ico"></span><span class="lbl">Sound</span></button><button class="auto-btn" id="d3-btn" type="button" aria-pressed="true" title="Switch between 3D and flat view"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg><span class="lbl">3D</span></button><button class="auto-btn" id="auto-btn" type="button" aria-pressed="true"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg><span class="lbl">Auto-move</span></button><button class="pause-btn" id="p-open" aria-label="Pause"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button></div>
       </div>
       <div class="bar big"><i class="fill" id="bb-fill"></i><i class="shield" id="bb-shield"></i><span id="bb-hp"></span></div>
-      <div class="stagger" id="bb-stag" hidden><div class="stag-track"><i id="bb-stagfill"></i></div><span id="bb-stagtext">Stagger 0 / 12</span></div>
+      <div class="stagger" id="bb-stag" hidden><div class="stag-track"><i id="bb-stagfill"></i></div><span id="bb-stagtext">Stagger 0 / 14</span></div>
       <div class="sigils" id="bb-sigils"></div>
     </div>
     <div id="arena">
@@ -692,11 +692,11 @@ const STATS=[
   {k:'spi',abbr:'SPI',name:'Spirit',desc:'Mana regen and cooldown reduction'},
 ];
 const CLASSES={
-  swordsman:{name:'Swordsman',role:'Melee duelist',color:'#f2b64b',blurb:'Closes in fast, guards hard and cuts deep.',base:{str:3,agi:2,int:0,vit:3,spi:1},hp:560,atk:24,aps:1.05,range:48,ranged:false,meleeMul:1.3,skills:['dash','whirl','guard','rising'],ult:'judgement',suggest:{str:4,agi:2,int:0,vit:3,spi:1}},
+  swordsman:{name:'Swordsman',role:'Melee duelist',color:'#f2b64b',blurb:'Closes in fast, guards hard and cuts deep.',base:{str:3,agi:2,int:0,vit:3,spi:1},hp:500,atk:24,aps:1.05,range:48,ranged:false,meleeMul:1.3,skills:['dash','whirl','guard','rising'],ult:'judgement',suggest:{str:4,agi:2,int:0,vit:3,spi:1}},
   shaman:{name:'Shaman',role:'Spirit caster',color:'#3fd6c4',blurb:'Curses, heals and calls lightning down from range.',base:{str:0,agi:1,int:4,vit:2,spi:3},hp:480,atk:18,aps:1.0,range:290,ranged:true,proj:{speed:460,r:8,kind:'spirit'},skills:['bolt','totem','thunder','hex'],ult:'storm',suggest:{str:0,agi:0,int:5,vit:2,spi:3}},
   archer:{name:'Archer',role:'Long-range marksman',color:'#9be15d',blurb:'Outranges everything and rewards clean footwork.',base:{str:2,agi:4,int:1,vit:1,spi:1},hp:450,atk:22,aps:1.15,range:320,ranged:true,proj:{speed:760,r:5,kind:'arrow'},skills:['pierce','tumble','rain','focus'],ult:'phoenix',suggest:{str:3,agi:4,int:0,vit:2,spi:1}},
   gunner:{name:'Gunner',role:'Rapid-fire skirmisher',color:'#ff8a3d',blurb:'Fast trigger, explosive tricks, likes it close.',base:{str:3,agi:3,int:1,vit:1,spi:1},hp:470,atk:14,aps:1.5,range:260,ranged:true,proj:{speed:860,r:4,kind:'bullet'},skills:['buck','grenade','overclock','roll'],ult:'bullet',suggest:{str:3,agi:4,int:1,vit:2,spi:0}},
-  brawler:{name:'Brawler',role:'Melee bruiser',color:'#ff6f9a',blurb:'Soaks hits, stuns often and heals by hitting back.',base:{str:4,agi:2,int:0,vit:4,spi:0},hp:620,atk:22,aps:1.25,range:44,ranged:false,meleeMul:1.25,skills:['charge','slam','bloodlust','combo'],ult:'quake',suggest:{str:4,agi:2,int:0,vit:4,spi:0}},
+  brawler:{name:'Brawler',role:'Melee bruiser',color:'#ff6f9a',blurb:'Soaks hits, stuns often and heals by hitting back.',base:{str:4,agi:2,int:0,vit:3,spi:1},hp:490,atk:22,aps:1.25,range:44,ranged:false,meleeMul:1.1,skills:['charge','slam','bloodlust','combo'],ult:'quake',suggest:{str:4,agi:2,int:0,vit:4,spi:0}},
 };
 function derive(key,alloc){
   const c=CLASSES[key],s={};
@@ -731,20 +731,20 @@ const SKILLS={
     cast(){const d=game.d;startDash(aim(),220,0.18,()=>{const b=game.b,ds=game.p.dash;hitBoss(dmg(d,60,1.4,0),{canCrit:true});fx({type:'slash',x:b.x,y:b.y,ang:ds?Math.atan2(ds.vy,ds.vx):0,r:b.r+30,color:'#ffe7a8'});});}},
   whirl:{name:'Whirlwind',cost:35,cd:10,desc:d=>`Spin for 2 seconds, hitting a nearby boss for ${dmg(d,14,0.4,0)} damage every 0.25s. You move 25% faster while spinning.`,
     cast(){const d=game.d,p=game.p;p.buffs.whirl=2;for(let k=1;k<=8;k++)later(k*0.25,()=>{fx({type:'ring',x:p.x,y:p.y,r0:20,r1:p.r+75,color:'#f2b64b',dur:0.22,w:3});if(dist(p,game.b)<p.r+game.b.r+70)hitBoss(dmg(d,14,0.4,0),{canCrit:true});});}},
-  guard:{name:'Iron Guard',cost:30,cd:14,desc:d=>`Raise a shield that absorbs ${Math.round(d.maxHp*0.28)} damage for 4 seconds.`,
-    cast(){const p=game.p;SFX.play('shield');p.shield=game.d.maxHp*0.28;p.shieldT=4;fx({type:'ring',x:p.x,y:p.y,r0:10,r1:44,color:'#9fd0ff',dur:0.4,w:4});}},
+  guard:{name:'Iron Guard',cost:30,cd:14,desc:d=>`Raise a shield that absorbs ${Math.round(d.maxHp*0.18)} damage for 4 seconds.`,
+    cast(){const p=game.p;SFX.play('shield');p.shield=game.d.maxHp*0.18;p.shieldT=4;fx({type:'ring',x:p.x,y:p.y,r0:10,r1:44,color:'#9fd0ff',dur:0.4,w:4});}},
   rising:{name:'Rising Blade',cost:25,cd:9,range:55,desc:d=>`Uppercut a boss in reach for ${dmg(d,50,1.25,0)} damage and stun it for 1.2 seconds. Stuns cancel its wind-up.`,
     cast(){const p=game.p;p.rise=0.4;p.castT2=0;later(0.2,()=>{const g=game,b=g.b;if(b.dead)return;hitBoss(dmg(g.d,50,1.25,0),{canCrit:true});stunBoss(1.2);fx({type:'slash',x:b.x,y:b.y,ang:-Math.PI/2,r:b.r+40,color:'#bff4ff'});burst(b.x,b.y,'#bff4ff',18,240);shake(6);SFX.play('crit');(g.spirit||(g.spirit=[])).push({x:b.x,y:b.y,t:0,f:Math.atan2(b.y-g.p.y,b.x-g.p.x)});});}},
   judgement:{name:'Judgement Blade',ult:true,cost:60,cd:40,desc:d=>`Call down a giant blade of light that follows the boss and strikes it from above for ${dmg(d,200,4,0)} damage, cracking the arena floor.`,
     cast(){const b=game.b;(game.swords||(game.swords=[])).push({x:b.x,y:b.y,t:0,fall:.62,stay:1.4,dmg:dmg(game.d,200,4,0),hit:false});shake(3);}},
 
-  bolt:{name:'Spirit Bolt',cost:15,cd:3,desc:d=>`Open a magic circle and fire a huge spirit bolt from it for ${dmg(d,40,0,1.3)} damage.`,
-    cast(){const g=game;(g.mc||(g.mc=[])).push({t:0,dur:.7,fire:.3,fired:false});later(.3,()=>{const g2=game,p=g2.p,b=g2.b,t2=dirTo(p,b);SFX.play('spirit');SFX.play('cast');shoot({x:p.x+t2.x*40,y:p.y+t2.y*40,vx:t2.x*520,vy:t2.y*520,dmg:dmg(g2.d,40,0,1.3),r:22,kind:'spirit',color:'#62f0dc',big:true,life:2});});}},
-  totem:{name:'Healing Totem',cost:40,cd:16,desc:d=>`Plant a totem. While you stand near it you restore ${Math.round(d.maxHp*0.045+d.power*0.3)} health per second for 5 seconds.`,
+  bolt:{name:'Spirit Bolt',cost:20,cd:4,desc:d=>`Open a magic circle and fire a huge spirit bolt from it for ${dmg(d,40,0,1.15)} damage.`,
+    cast(){const g=game;(g.mc||(g.mc=[])).push({t:0,dur:.7,fire:.3,fired:false});later(.3,()=>{const g2=game,p=g2.p,b=g2.b,t2=dirTo(p,b);SFX.play('spirit');SFX.play('cast');shoot({x:p.x+t2.x*40,y:p.y+t2.y*40,vx:t2.x*520,vy:t2.y*520,dmg:dmg(g2.d,40,0,1.15),r:22,kind:'spirit',color:'#62f0dc',big:true,life:2});});}},
+  totem:{name:'Healing Totem',cost:40,cd:16,desc:d=>`Plant a totem. While you stand near it you restore ${Math.round(d.maxHp*0.03+d.power*0.2)} health per second for 5 seconds.`,
     cast(){const p=game.p;SFX.play('heal');game.totems.push({x:p.x,y:p.y,t:5,r:140});}},
   thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Charge your staff and hurl a bolt of lightning into the boss for ${dmg(d,80,0,2.2)} damage.`,
     cast(){const p=game.p;p.charge=.28;p.castT2=.5;later(.28,()=>{const g=game,b=g.b;if(b.dead)return;SFX.play('bolt');shake(5);hitBoss(dmg(g.d,80,0,2.2),{canCrit:true});burst(b.x,b.y,'#fff3a0',18,260);(g.sbolts||(g.sbolts=[])).push({t:0,dur:.32});});}},
-  hex:{name:'Hex',cost:30,cd:12,range:420,desc:()=>`Curse the boss for 4 seconds. It takes 25% more damage from everything and moves 40% slower.`,
+  hex:{name:'Hex',cost:30,cd:12,range:420,desc:()=>`Curse the boss for 4 seconds. It takes 20% more damage from everything and moves 40% slower.`,
     cast(){const b=game.b;b.vulnT=4;b.slowT=4;text(b.x,b.y-b.r-26,'Hexed','#c99bff',14);burst(b.x,b.y,'#c99bff',16,140);}},
   storm:{name:'Ancestral Storm',ult:true,cost:70,cd:40,desc:d=>`Summon a storm that chains the boss to the sky with lightning for 4 seconds, striking 8 times for ${dmg(d,30,0,0.95)} damage each.`,
     cast(){const g=game;g.storm={t:0,dur:4.1,pulse:0};for(let k=0;k<8;k++)later(k*0.5,()=>{const b=game.b;if(b.dead)return;SFX.play('bolt');if(game.storm)game.storm.pulse=1;burst(b.x,b.y,'#bff6ff',10,200);hitBoss(dmg(game.d,30,0,0.95),{canCrit:true});shake(2);});}},
@@ -777,9 +777,9 @@ const SKILLS={
     cast(){const g=game,p=g.p,fur=g.empFury,R=fur?210:140;p.slamT=.3;later(.3,()=>{const b=game.b;SFX.play('slam');fx({type:'ring',x:p.x,y:p.y,r0:20,r1:R,color:'#ff8fb0',dur:.4});burst(p.x,p.y,'#ffb3c8',18,220);shake(6);game.hitstop=.05;(game.cracks||(game.cracks=[])).push(makeCrack(p.x,p.y,fur?.9:.6));
       if(E.on&&E.vp)for(let i=0;i<24;i++){const a=rand(0,TAU),v=rand(60,R*1.6);ep({x:p.x,y:4,z:p.y,vx:Math.cos(a)*v,vy:rand(20,70),vz:Math.sin(a)*v,dur:rand(.6,1),s:rand(18,30),grow:30,c:'#b48a5a',a:.35,drag:2});}
       if(!b.dead&&dist(p,b)<R+b.r*0.7){hitBoss(dmg(game.d,60,1.05,0)*(fur?1.3:1),{canCrit:true});stunBoss(.6);}});}},
-  bloodlust:{name:'Bloodlust',cost:25,cd:15,desc:()=>`For 5 seconds, heal for 30% of all damage you deal.`,
-    cast(){const fur=game.empFury;SFX.play('heal');game.p.buffs.lifesteal=fur?7:5;game.p.lsMul=fur?.45:.3;fx({type:'ring',x:game.p.x,y:game.p.y,r0:40,r1:12,color:'#ff6f9a',dur:0.4,w:4});}},
-  combo:{name:'Combo Rush',cost:20,cd:6,range:50,desc:d=>`Jab, cross, then uppercut for ${dmg(d,20,0.7,0)} damage each. The uppercut hits 20% harder and knocks the boss back.`,
+  bloodlust:{name:'Bloodlust',cost:25,cd:15,desc:()=>`For 5 seconds, heal for 15% of all damage you deal.`,
+    cast(){const fur=game.empFury;SFX.play('heal');game.p.buffs.lifesteal=fur?7:5;game.p.lsMul=fur?0.25:0.15;fx({type:'ring',x:game.p.x,y:game.p.y,r0:40,r1:12,color:'#ff6f9a',dur:0.4,w:4});}},
+  combo:{name:'Combo Rush',cost:20,cd:7.5,range:50,desc:d=>`Jab, cross, then uppercut for ${dmg(d,20,0.7,0)} damage each. The uppercut hits 20% harder and knocks the boss back.`,
     cast(){const g=game,fur=g.empFury,n=fur?4:3,p=g.p;p.comboT=n*.14;p.comboN=n;
       for(let k=0;k<n;k++)later(k*0.14+.06,()=>{const b=game.b;if(b.dead)return;if(dist(game.p,b)<game.p.r+b.r+80){const last=k===n-1,t2=dirTo(game.p,b);hitBoss(dmg(game.d,20,0.7,0)*(fur?1.3:1)*(last?1.2:1),{canCrit:true});SFX.play(last?'hook':'punch');
         fx({type:last?'upper':'punch',x:b.x-t2.x*b.r*.8,y:b.y-t2.y*b.r*.8,ang:Math.atan2(t2.y,t2.x),dur:.28});game.hitstop=last?.07:.03;
@@ -837,7 +837,7 @@ function rollBoss(){
   const el=pick(ELEMENTS);
   const actives=shuffle(Object.keys(POWERS).filter(k=>POWERS[k].kind==='active')).slice(0,3);
   const passive=pick(Object.keys(POWERS).filter(k=>POWERS[k].kind==='passive'));
-  return{name:pick(N1)+pick(N2),title:`the ${el.n} ${pick(TITLES)}`,el,powers:shuffle([...actives,passive]),hp:Math.round(rand(7500,9000)/50)*50,dmgMul:rand(0.92,1.12)};
+  return{name:pick(N1)+pick(N2),title:`the ${el.n} ${pick(TITLES)}`,el,powers:shuffle([...actives,passive]),hp:Math.round(rand(8500,10000)/50)*50,dmgMul:rand(1.35,1.55)};
 }
 
 /* ---------- combat core ---------- */
@@ -847,7 +847,7 @@ function hitBoss(base,opt={}){
   let v=base,crit=!!opt.force;
   if(!crit&&opt.canCrit&&Math.random()<g.d.crit)crit=true;
   if(crit)v*=1.75;
-  if(b.vulnT>0)v*=1.25;
+  if(b.vulnT>0)v*=1.2;
   v=Math.max(1,Math.round(v*rand(0.94,1.06)));
   let rest=v;
   if(b.shield>0){const a=Math.min(b.shield,rest);b.shield-=a;rest-=a;}
@@ -865,7 +865,7 @@ function hurtPlayer(amount,opt={}){
   if(p.iframe>0&&!opt.pierce){if(!opt.quiet)SFX.play('dodge');if(!opt.quiet)text(p.x,p.y-28,'Dodged','#c7bfe6',13);return;}
   let v=amount;
   if(!opt.raw)v*=b.dmgMul*(b.enraged?1.35:1)*(g.berserk?2:1);
-  v*=1-g.d.dr;if(p.buffs.fortify)v*=0.6;if(p.buffs.anchor)v*=0.75;if(opt.close&&!g.c.ranged)v*=0.8;
+  v*=1-g.d.dr;if(p.buffs.fortify)v*=0.6;if(p.buffs.anchor)v*=0.75;
   v=Math.max(1,Math.round(v));
   if(p.shield>0){const a=Math.min(p.shield,v);p.shield-=a;v-=a;if(a>=1)text(p.x+14,p.y-32,'-'+Math.round(a),'#9fd0ff',13);if(p.shield<=0){p.shield=0;p.shieldT=0;}}
   if(v<=0){SFX.play('shieldHit');return;}
@@ -909,7 +909,7 @@ function useSkill(i){
 }
 function pulse(i){SFX.play('deny');const el=hud.sk&&hud.sk[i]&&hud.sk[i].btn;if(!el)return;el.classList.remove('deny');void el.offsetWidth;el.classList.add('deny');}
 
-const STAGGER_MAX=12;
+const STAGGER_MAX=14;
 function addStagger(){
   const g=game,b=g.b;if(b.dead||g.over||b.stunT>0)return;
   b.stagger++;
@@ -960,7 +960,7 @@ function update(dt){
   if(g.sbolts&&g.sbolts.length){for(const q of g.sbolts)q.t+=dt;g.sbolts=g.sbolts.filter(q=>q.t<q.dur);}
   if(g.storm){g.storm.t+=dt;g.storm.pulse=Math.max(0,g.storm.pulse-dt*4);if(g.storm.t>g.storm.dur||g.b.dead)g.storm=null;}
   p.charge=Math.max(0,(p.charge||0)-dt);
-  for(const t of g.totems){t.t-=dt;if(!g.over&&dist(t,p)<t.r)healPlayer((g.d.maxHp*0.045+g.d.power*0.3)*dt);}
+  for(const t of g.totems){t.t-=dt;if(!g.over&&dist(t,p)<t.r)healPlayer((g.d.maxHp*0.03+g.d.power*0.2)*dt);}
   g.totems=g.totems.filter(t=>t.t>0);
   g.thornT-=dt;
   if(g.thornT<=0){g.thornT=0.6;if(g.thornAcc>=1&&!g.over){reveal('thorns');hurtPlayer(g.thornAcc,{raw:true,pierce:true,reflect:true});g.thornAcc=0;}if(p.healAcc>=1){text(p.x,p.y-30,'+'+Math.round(p.healAcc),'#6fe3a6',14);p.healAcc=0;}}
@@ -1537,11 +1537,8 @@ function thread3(a,b,lift,wob,ph,n,w,c,al){const dx=b[0]-a[0],dz=b[2]-a[2],L=Mat
   return pts;}
 function totemFX3D(g,tt,t){
   const G=E.G,p=g.p,C='#62f0dc',orb=[tt.x,40,tt.y],inR=!p.dead&&dist(tt,p)<tt.r,fade=clamp(tt.t/.4,0,1);
-  /* the wheel: spinning rings and spokes above the totem, and a woven ring on the ground */
-  for(const [r,y,sp,op] of [[34,58,1.4,.75],[24,62,-2.1,.6],[46,54,.8,.4]]){decal(G.thin,tt.x,tt.y,r,r,t*sp,C,op*fade,y,true);
-    for(let i=0;i<6;i++){const a=t*sp+i*Math.PI/3;decal(G.plane,tt.x+Math.cos(a)*r/2,tt.y+Math.sin(a)*r/2,r,1.4,-a,C,op*.8*fade,y,true);}}
+  /* a woven ring on the ground */
   for(let i=0;i<12;i++){const a=t*.6+i*TAU/12,a2=a+TAU/12*5;const p1=[tt.x+Math.cos(a)*tt.r*.96,2,tt.y+Math.sin(a)*tt.r*.96],p2=[tt.x+Math.cos(a2)*tt.r*.96,2,tt.y+Math.sin(a2)*tt.r*.96];beam(p1,p2,1.6,C,.18*fade);}
-  for(let i=0;i<8;i++){const a=t*1.2+i*TAU/8;beam([tt.x,40,tt.y],[tt.x+Math.cos(a)*34,58,tt.y+Math.sin(a)*34],1.4,C,.35*fade);}
   /* threads to the hero while healing */
   if(inR){const hand=[p.x,26,p.y];
     for(let i=0;i<3;i++){const pts=thread3(orb,hand,36+i*10,14,t*3+i*2.1,14,2.2,i===1?'#d8fff8':C,.85);
@@ -2073,7 +2070,7 @@ function renderBuild(msg){
   const u=SKILLS[c.ult];
   $('#b-ult').innerHTML=`<span class="slot">R</span><span class="sc-head"><b>${esc(u.name)} · Ultimate</b><span class="sc-meta">${u.cost} MP · ${(u.cd*(1-d.cdr)).toFixed(1)}s</span></span><span class="sc-desc">${esc(u.desc(d))}</span>`;
   const tr=$('#b-trait');tr.hidden=!!c.ranged;
-  if(!c.ranged)tr.innerHTML=(k==='brawler'?`<b>Fury · brawler passive</b>Dealing and taking damage fills Fury. At full Fury your next skill is empowered: Charge Punch goes further and stuns longer, Ground Slam hits a wider area, Combo Rush adds a fourth strike, Bloodlust lasts longer and heals more, and Earthshaker hits harder and wider.<br><br>`:'')+`<b>Frontline · melee trait</b>Basic hits deal ${Math.round((c.meleeMul-1)*100)}% more damage and build Stagger on the boss. Every ${STAGGER_MAX} hits it's stunned for 1.5 seconds and its current wind-up is cancelled. You take 20% less damage from its swipe and stomp.`;
+  if(!c.ranged)tr.innerHTML=(k==='brawler'?`<b>Fury · brawler passive</b>Dealing and taking damage fills Fury. At full Fury your next skill is empowered: Charge Punch goes further and stuns longer, Ground Slam hits a wider area, Combo Rush adds a fourth strike, Bloodlust lasts longer and heals more, and Earthshaker hits harder and wider.<br><br>`:'')+`<b>Frontline · melee trait</b>Basic hits deal ${Math.round((c.meleeMul-1)*100)}% more damage and build Stagger on the boss. Every ${STAGGER_MAX} hits it's stunned for 1.5 seconds and its current wind-up is cancelled.`;
   $('#b-note').textContent=msg||(left>0?`Spend ${left} more point${left>1?'s':''} to continue.`:ui.skills.length<2?`Choose ${2-ui.skills.length} more skill${ui.skills.length?'':'s'} to continue.`:'Ready. The boss is rolled when the gate opens.');
   $('#b-start').disabled=left>0||ui.skills.length<2;
 }
