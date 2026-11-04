@@ -1357,6 +1357,36 @@ function grenades3D(g,rdt,t){const G=E.G;
     const a=q.t<4?.62:.62*(5-q.t);decal(G.disc,q.x,q.z,62,56,0,'#0a0708',a,.32);decal(G.ring,q.x,q.z,66,60,0,'#ff7a1f',clamp(.7-q.t*.7,0,.7),.33,true);
     if(q.t<.25){const f=1-q.t/.25;spr(q.x,24,q.z,220*f+60,220*f+60,'#ffb347',f);spr(q.x,16,q.z,90,90,'#ffffff',f);E.flash=Math.max(E.flash,f*.8);}}
 }
+function thread3(a,b,lift,wob,ph,n,w,c,al){const dx=b[0]-a[0],dz=b[2]-a[2],L=Math.hypot(dx,dz)||1,sx=-dz/L,sz=dx/L;let prev=null;const pts=[];
+  for(let i=0;i<=n;i++){const u=i/n,arc=4*u*(1-u),wv=Math.sin(u*Math.PI)*Math.sin(ph+u*6)*wob;
+    const q=[a[0]+dx*u+sx*wv,a[1]+(b[1]-a[1])*u+lift*arc+Math.cos(ph*1.3+u*5)*wob*.35*arc,a[2]+dz*u+sz*wv];pts.push(q);if(prev){beam(prev,q,w*2.6,c,al*.35);beam(prev,q,w,c,al);}prev=q;}
+  return pts;}
+function totemFX3D(g,tt,t){
+  const G=E.G,p=g.p,C='#62f0dc',orb=[tt.x,40,tt.y],inR=!p.dead&&dist(tt,p)<tt.r,fade=clamp(tt.t/.4,0,1);
+  /* the wheel: spinning rings and spokes above the totem, and a woven ring on the ground */
+  for(const [r,y,sp,op] of [[34,58,1.4,.75],[24,62,-2.1,.6],[46,54,.8,.4]]){decal(G.thin,tt.x,tt.y,r,r,t*sp,C,op*fade,y,true);
+    for(let i=0;i<6;i++){const a=t*sp+i*Math.PI/3;decal(G.plane,tt.x+Math.cos(a)*r/2,tt.y+Math.sin(a)*r/2,r,1.4,-a,C,op*.8*fade,y,true);}}
+  for(let i=0;i<12;i++){const a=t*.6+i*TAU/12,a2=a+TAU/12*5;const p1=[tt.x+Math.cos(a)*tt.r*.96,2,tt.y+Math.sin(a)*tt.r*.96],p2=[tt.x+Math.cos(a2)*tt.r*.96,2,tt.y+Math.sin(a2)*tt.r*.96];beam(p1,p2,1.6,C,.18*fade);}
+  for(let i=0;i<8;i++){const a=t*1.2+i*TAU/8;beam([tt.x,40,tt.y],[tt.x+Math.cos(a)*34,58,tt.y+Math.sin(a)*34],1.4,C,.35*fade);}
+  /* threads to the hero while healing */
+  if(inR){const hand=[p.x,26,p.y];
+    for(let i=0;i<3;i++){const pts=thread3(orb,hand,36+i*10,14,t*3+i*2.1,14,2.2,i===1?'#d8fff8':C,.85);
+      for(let j=0;j<2;j++){const u=((t*1.2+i*.33+j*.5)%1),k=Math.min(pts.length-1,Math.floor(u*(pts.length-1))),q=pts[k];spr(q[0],q[1],q[2],12,12,'#d8fff8',.95);}}
+    decal(G.thin,p.x,p.y,22,22,-t*3,C,.7,1.2,true);
+    if(Math.random()<.3)ep({x:p.x+rand(-12,12),y:10,z:p.y+rand(-12,12),vy:rand(30,60),dur:.9,s:9,c:'#9cffc8',a:.9});}
+}
+function hexFX3D(g,t,fl){
+  const G=E.G,p=g.p,b=g.b,cols=['#c99bff','#ff8fd6','#e9d8ff','#b38cff'],fade=clamp(b.vulnT/.4,0,1);
+  if(!p.dead){const hand=[p.x+Math.cos(E.face)*10,30,p.y+Math.sin(E.face)*10];
+    for(let i=0;i<4;i++){const tgt=[b.x+Math.cos(i*1.7+t)*14,fl+(i-1.5)*9,b.y+Math.sin(i*1.7+t)*14];
+      const pts=thread3(hand,tgt,14+i*5,9+i*2,t*4+i*1.6,16,1.7,cols[i],.9*fade);
+      const u=(t*.9+i*.25)%1,q=pts[Math.min(pts.length-1,Math.floor(u*(pts.length-1)))];spr(q[0],q[1],q[2],9,9,'#ffe0ff',.9*fade);}
+    spr(hand[0],hand[1],hand[2],22,22,'#ff8fd6',.7*fade);}
+  for(let i=0;i<3;i++){const y=fl-22+i*22,r=b.r+4+Math.sin(t*3+i)*3;decal(G.thin,b.x,b.y,r,r,t*(i%2?-2.5:2.5),cols[i],.85*fade,y,true);
+    for(let k=0;k<4;k++){const a=t*(i%2?-2.5:2.5)+k*Math.PI/2;spr(b.x+Math.cos(a)*r,y,b.y+Math.sin(a)*r,8,8,'#ffe0ff',.9*fade);}}
+  for(let i=0;i<5;i++){const a=i*TAU/5+t*.7,a2=a+2.2;beam([b.x+Math.cos(a)*(b.r+4),fl-18,b.y+Math.sin(a)*(b.r+4)],[b.x+Math.cos(a2)*(b.r+4),fl+18,b.y+Math.sin(a2)*(b.r+4)],1.5,cols[i%4],.7*fade);}
+  decal(G.thin,b.x,b.y,b.r+20,b.r+20,t*2,'#c99bff',.6*fade,1.2,true);
+}
 function legSeg(w,L){return geo('seg'+w+'_'+L,()=>gT(boxS(w,L,w),0,-L/2,0));}
 function buildFeet(root,el,ftype,fl){
   const E2=rgb(el.c),dark=rgb(el.core),F={type:ftype,legs:[]};
@@ -1556,7 +1586,7 @@ function render3D(){
     decal(G.disc,b.x,b.y,b.r*1.5,b.r*1.5,0,el,b.enraged?.16:.09,.4,true);
     spr(b.x,fl,b.y,170,170,el,b.enraged?.4:.25);
     if(b.castT>0)spr(b.x+Math.cos(E.bf)*36,fl+7,b.y+Math.sin(E.bf)*36,60,60,'#ffffff',.5);
-    if(b.vulnT>0)decal(G.thin,b.x,b.y,b.r+20,b.r+20,t*2,'#c99bff',.85,1.2,true);
+    if(b.vulnT>0)hexFX3D(g,t,fl);
     if(b.suppT>0){decal(G.ring,b.x,b.y,b.r+12,b.r+12,0,'#ffd08a',.35+.25*Math.sin(t*30),1.1,true);for(let i=0;i<2;i++)spr(b.x+rand(-34,34),fl+rand(-20,30),b.y+rand(-34,34),10,10,'#ffd08a',.9);}
     if(b.stunT>0)for(let i=0;i<3;i++){const a=t*5+i*TAU/3;spr(b.x+Math.cos(a)*30,fl+62,b.y+Math.sin(a)*30,16,16,'#ffe08a',1);}
   }
@@ -1567,6 +1597,7 @@ function render3D(){
   /* totems */
   for(const tt of g.totems){lit(geo('tpole',()=>cylG(2.5,3.5,34,6)),trs(tt.x,17,tt.y,0,0,0,1,1,1),[.9,1,.98],[0,0,0],1);flat(G.sph,trs(tt.x,40,tt.y,0,0,0,7,7,7),[.38,.94,.86,1],null,1);
     decal(G.disc,tt.x,tt.y,tt.r,tt.r,0,g.c.color,.12+.05*Math.sin(t*6),.7);decal(G.ring,tt.x,tt.y,tt.r,tt.r,0,g.c.color,.7,.8,true);spr(tt.x,40,tt.y,34,34,'#62f0dc',.8);}
+  for(const tt of g.totems)totemFX3D(g,tt,t);
   /* telegraphs */
   for(const h of g.haz){
     if(!h.fired){const k=clamp(h.t/h.delay,0,1);
