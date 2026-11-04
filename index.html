@@ -1646,7 +1646,7 @@ function buildSword3D(){
   addN(root,N(E.G.sph,'#ff7a3d',{y:257,z:7,sx:5,sy:5,sz:2,unlit:true}));
   return{root,glow:[blade,tip]};
 }
-function drawSwords3D(g,t){const G=E.G,S=E.scene;
+function drawSwords3D(g,t){const G=E.G,S=E.scene,b=g.b;
   for(const c of (g.cracks||[])){const lf=c.life||4.4,sc=c.sc||1,fade=c.t<lf-1?1:clamp(lf-c.t,0,1),glow=clamp(1-c.t/(1.3*sc),0,1),rev=c.t*1100*sc;
     decal(G.disc,c.x,c.y,64*sc,58*sc,0,'#07050c',.6*fade,.31);if(sc>1)decal(G.thin,c.x,c.y,70*sc,64*sc,0,'#ff9a4a',glow*.6,.335,true);
     for(const sg of c.seg){if(sg[5]>rev)continue;const dx=sg[2]-sg[0],dy=sg[3]-sg[1],L=Math.hypot(dx,dy)+sg[4]*.6,a=Math.atan2(dy,dx),mx=(sg[0]+sg[2])/2,my=(sg[1]+sg[3])/2;
@@ -1658,9 +1658,9 @@ function drawSwords3D(g,t){const G=E.G,S=E.scene;
     if(!a.hit){const r=74-34*k;decal(G.disc,a.x,a.y,r,r,0,'#9be15d',.06+.14*k,.7,true);decal(G.thin,a.x,a.y,r,r,t*2.5,C,.95,.9,true);decal(G.thin,a.x,a.y,r*.55,r*.55,-t*4,C,.75,.92,true);
       for(let i=0;i<4;i++){const an=t*2.5+i*Math.PI/2;decal(G.plane,a.x+Math.cos(an)*r,a.y+Math.sin(an)*r,16,3,-an,C,.95,.95,true);}
       decal(G.disc,a.x,a.y,5,5,0,'#ffffff',.9,1,true);
-      const A=paAxis(a),h=(1-k*k)*700,tx=a.x+A.ux*h,ty=-16+A.uy*h,tz=a.y+A.uz*h;longArrow(ag,tx,ty,tz,[.1,.1,.06],flc,wood,steel,A.ang);
+      const A=paAxis(a),h=(1-k*k)*700,by=E.bodyY||60,tx=a.x+A.ux*h,ty=by+A.uy*h,tz=a.y+A.uz*h;longArrow(ag,tx,ty,tz,[.1,.1,.06],flc,wood,steel,A.ang);
       spr(tx,ty,tz,40,40,C,.7);for(let i=1;i<5;i++){const d=104*PA_LEN-40+i*34;spr(tx+A.ux*d,ty+A.uy*d,tz+A.uz*d,16-i*2,46,C,.5-i*.09);}}
-    else{const q=a.t-a.fall,sink=q>a.stay-.3?(q-(a.stay-.3))/.3*260:0,A=paAxis(a);longArrow(ag,a.x-A.ux*sink,-16-A.uy*sink,a.y-A.uz*sink,[0,0,0],flc,wood,steel,A.ang);
+    else{const q=a.t-a.fall,sink=q>a.stay-.3?(q-(a.stay-.3))/.3*1:0,A=paAxis(a),bx=b.dead?a.x:b.x,bz=b.dead?a.y:b.y,by=E.bodyY||60;if(sink<1)longArrow(ag,bx+A.ux*8,by+A.uy*8,bz+A.uz*8,[0,0,0],flc,wood,steel,A.ang);
       if(q<.3){const f=1-q/.3;spr(a.x,20,a.y,180*f+40,180*f+40,C,f);spr(a.x,10,a.y,70,70,'#ffffff',f);E.flash=Math.max(E.flash,f*.6);}
       if(q<.05)for(let i=0;i<12;i++)ep({x:a.x,y:6,z:a.y,vx:rand(-160,160),vy:rand(40,160),vz:rand(-160,160),g:-500,dur:rand(.4,.7),s:rand(14,24),grow:20,c:'#b48a5a',a:.35});}}
   for(const s of (g.swords||[])){
@@ -1693,8 +1693,8 @@ function buildScene3D(g){
   E.arrows=[];E.blood=[];E.pools=[];E.vp=[];E.spk=[];E.lb=[];E.scorch=[];E.scene=S;E.tx=W/2+(g.p.x-W/2)*.55;E.tz=H/2+(g.p.y-H/2)*.55;E.px=g.p.x;E.py=g.p.y;E.walk=0;E.face=g.p.face;E.bf=g.b.face;E.last=performance.now();E.fc=0;E.ft=16;
 }
 function gMerge(...gs){const g=GB();for(const x of gs)g.p.push(...x.p);return g;}
-const PA_LEN=2.4;
-const PA_TILT=.62;
+const PA_LEN=2.1;
+const PA_TILT=.9;
 /* arrow axis: tip at (x,y,z), tail leaning PA_TILT sideways toward the archer's side, so the camera sees its full length */
 function paAxis(a){const dx=a.ox<a.x?-1:1,dz=.45,l=Math.hypot(dx,dz);return{ang:Math.atan2(dz/l,dx/l),ux:Math.sin(PA_TILT)*dx/l,uy:Math.cos(PA_TILT),uz:Math.sin(PA_TILT)*dz/l};}
 function longArrow(ag,x,y,z,em,flc,wood,steel,ang){const M=mul(trs(x,y,z,0,-ang,0,1,1,1),mul(trs(0,0,0,0,0,-PA_TILT,1,1,1),trs(0,0,0,0,0,-Math.PI/2,4,4,4)));
@@ -1850,7 +1850,7 @@ function render3D(){
   if(!b.dead){
     const bmv=Math.hypot(b.x-(E.bpx??b.x),b.y-(E.bpy??b.y))/Math.max(rdt,1e-3);E.bmv={x:(b.x-(E.bpx??b.x))/Math.max(rdt,1e-3),z:(b.y-(E.bpy??b.y))/Math.max(rdt,1e-3)};E.bpx=b.x;E.bpy=b.y;
     const bmoving=clamp(bmv/60,0,1);E.bwalk=(E.bwalk||0)+rdt*Math.min(bmv,300)*.07;
-    const fl=B.feet?B.fl0+Math.abs(Math.sin(E.bwalk))*2*bmoving:B.fl0+Math.sin(t*2)*5;E.bfl=fl;B.root.x=b.x;B.root.y=fl;B.root.z=b.y;poseFeet(B.feet,t,E.bwalk,bmoving);
+    const fl=B.feet?B.fl0+Math.abs(Math.sin(E.bwalk))*2*bmoving:B.fl0+Math.sin(t*2)*5;E.bfl=fl;B.root.x=b.x;B.root.y=fl;B.root.z=b.y;poseFeet(B.feet,t,E.bwalk,bmoving);E.bodyY=fl;
     E.bf+=Math.atan2(Math.sin(b.face-E.bf),Math.cos(b.face-E.bf))*Math.min(1,rdt*6);B.root.ry=-E.bf;
     B.spikes.ry=b.spin;B.ring.rz=Math.sin(t*1.3)*.18;B.core.emi=b.flash>0?[.9,.9,.9]:(p.buffs.lifesteal?[.34+.12*Math.sin(t*9),.02,.05]:B.baseEmi);
     const ec=b.enraged?rgb('#ff3b3b'):(b.castT>0?[1,1,1]:S.elc);for(const e of B.eyes.kids)e.col=ec;
