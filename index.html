@@ -585,8 +585,8 @@ const SKILLS={
     cast(){const p=game.p;SFX.play('shield');p.shield=game.d.maxHp*0.28;p.shieldT=4;fx({type:'ring',x:p.x,y:p.y,r0:10,r1:44,color:'#9fd0ff',dur:0.4,w:4});}},
   rising:{name:'Rising Blade',cost:25,cd:9,range:55,desc:d=>`Uppercut a boss in reach for ${dmg(d,50,1.25,0)} damage and stun it for 1.2 seconds. Stuns cancel its wind-up.`,
     cast(){const b=game.b;hitBoss(dmg(game.d,50,1.25,0),{canCrit:true});stunBoss(1.2);fx({type:'slash',x:b.x,y:b.y,ang:-Math.PI/2,r:b.r+40,color:'#ffe7a8'});burst(b.x,b.y,'#ffe7a8',14,220);}},
-  judgement:{name:'Judgement Blade',ult:true,cost:60,cd:40,desc:d=>`Release a wave of light that cleaves for ${dmg(d,200,4,0)} damage.`,
-    cast(){shoot(Object.assign(toward(620),{dmg:dmg(game.d,200,4,0),r:30,pierce:true,kind:'wave',color:'#ffe08a',life:1.6,canCrit:true}));shake(6);}},
+  judgement:{name:'Judgement Blade',ult:true,cost:60,cd:40,desc:d=>`Call down a giant blade of light that follows the boss and strikes it from above for ${dmg(d,200,4,0)} damage, cracking the arena floor.`,
+    cast(){const b=game.b;(game.swords||(game.swords=[])).push({x:b.x,y:b.y,t:0,fall:.62,stay:1.4,dmg:dmg(game.d,200,4,0),hit:false});shake(3);}},
 
   bolt:{name:'Spirit Bolt',cost:15,cd:3,desc:d=>`Hurl a spirit orb for ${dmg(d,40,0,1.3)} damage.`,
     cast(){shoot(Object.assign(toward(480),{dmg:dmg(game.d,40,0,1.3),r:11,kind:'spirit',color:'#62f0dc'}));}},
@@ -761,12 +761,27 @@ function basicAttack(){
   else{SFX.play(c.proj.kind);const t=dirTo(p,b);shoot({vx:t.x*c.proj.speed,vy:t.y*c.proj.speed,dmg:base,canCrit:true,force,r:c.proj.r+(force?2:0),kind:c.proj.kind,color:force?'#ffe08a':c.color,life:p.buffs.anchor?3:1.6,homing:!!p.buffs.anchor});}
 }
 
+/* ---------- Judgement Blade: falling sword + floor cracks ---------- */
+function makeCrack(x,y){const seg=[],n=9,a0=rand(0,TAU);
+  for(let i=0;i<n;i++){let a=a0+i/n*TAU+rand(-.25,.25),px=x+Math.cos(a)*16,py=y+Math.sin(a)*16,w=rand(6,9),len=16;const L=rand(120,200);
+    while(len<L){const st=rand(18,32);a+=rand(-.45,.45);const nx=px+Math.cos(a)*st,ny=py+Math.sin(a)*st;seg.push([px,py,nx,ny,w,len]);
+      if(Math.random()<.32){const ba=a+(Math.random()<.5?-1:1)*rand(.6,1.1),bl=rand(18,42);seg.push([nx,ny,nx+Math.cos(ba)*bl,ny+Math.sin(ba)*bl,w*.55,len+st]);}
+      px=nx;py=ny;len+=st;w*=.83;}}
+  return{x,y,t:0,seg};}
+function updateSwords(dt){const g=game,b=g.b;if(g.swords&&g.swords.length){
+  for(const s of g.swords){s.t+=dt;if(s.hit)continue;if(!b.dead){s.x=b.x;s.y=b.y;}
+    if(s.t>=s.fall){s.hit=true;SFX.play('boom');SFX.play('stagger');shake(14);
+      fx({type:'ring',x:s.x,y:s.y,r0:20,r1:220,color:'#ffe08a',dur:.5,w:8});burst(s.x,s.y,'#ffe7a8',40,380,4,.8);burst(s.x,s.y,'#8a7fa8',26,240,4,.9);
+      if(!b.dead&&dist(s,b)<b.r+100)hitBoss(s.dmg,{canCrit:true});(g.cracks||(g.cracks=[])).push(makeCrack(s.x,s.y));}}
+  g.swords=g.swords.filter(s=>s.t<s.fall+s.stay);}
+  if(g.cracks&&g.cracks.length){for(const c of g.cracks)c.t+=dt;g.cracks=g.cracks.filter(c=>c.t<4.4);}}
+
 /* ---------- update ---------- */
 function update(dt){
   const g=game,p=g.p;g.t+=g.over?0:dt;
   for(let i=g.timers.length-1;i>=0;i--){const tm=g.timers[i];tm.t-=dt;if(tm.t<=0){g.timers.splice(i,1);if(!g.over)tm.fn();}}
   if(!g.over){updatePlayer(dt);updateBoss(dt);}
-  updateShots(dt);updateZones(dt);updateHaz(dt);
+  updateShots(dt);updateZones(dt);updateHaz(dt);updateSwords(dt);
   for(const t of g.totems){t.t-=dt;if(!g.over&&dist(t,p)<t.r)healPlayer((g.d.maxHp*0.045+g.d.power*0.3)*dt);}
   g.totems=g.totems.filter(t=>t.t>0);
   g.thornT-=dt;
@@ -984,7 +999,14 @@ function render(){
     else{ctx.fillStyle=el;circle(ctx,s.x,s.y,s.r);ctx.fill();ctx.fillStyle='#ffffff';circle(ctx,s.x,s.y,s.r*0.4);ctx.fill();}
     ctx.restore();
   }
+  for(const c of (g.cracks||[])){const fade=c.t<3.4?1:clamp(4.4-c.t,0,1),gl2=clamp(1-c.t/1.2,0,1),rev=c.t*1100;ctx.save();ctx.lineCap='round';
+    ctx.strokeStyle=`rgba(6,4,10,${.9*fade})`;for(const sg of c.seg){if(sg[5]>rev)continue;ctx.lineWidth=sg[4]*.6;ctx.beginPath();ctx.moveTo(sg[0],sg[1]);ctx.lineTo(sg[2],sg[3]);ctx.stroke();}
+    if(gl2>0){ctx.strokeStyle=`rgba(255,207,107,${gl2})`;for(const sg of c.seg){if(sg[5]>rev)continue;ctx.lineWidth=sg[4]*.25;ctx.beginPath();ctx.moveTo(sg[0],sg[1]);ctx.lineTo(sg[2],sg[3]);ctx.stroke();}}ctx.restore();}
   drawBoss(ctx,g);
+  for(const s of (g.swords||[])){const k=clamp(s.t/s.fall,0,1),yy=s.y-(s.hit?0:(1-k*k)*420);ctx.save();ctx.globalAlpha=s.hit?clamp(1-(s.t-s.fall)/s.stay,0,1):1;
+    ctx.shadowColor='#ffe08a';ctx.shadowBlur=20;ctx.fillStyle='#e9eefc';ctx.fillRect(s.x-7,yy-170,14,160);ctx.beginPath();ctx.moveTo(s.x-7,yy-10);ctx.lineTo(s.x+7,yy-10);ctx.lineTo(s.x,yy+6);ctx.fill();
+    ctx.fillStyle='#f2b64b';ctx.fillRect(s.x-30,yy-178,60,9);ctx.fillRect(s.x-4,yy-210,8,32);ctx.restore();
+    if(!s.hit){ctx.strokeStyle='rgba(255,224,138,.75)';ctx.lineWidth=2;circle(ctx,s.x,s.y,95);ctx.stroke();}}
   drawPlayer(ctx,g);
   for(const s of g.shots){
     const a=Math.atan2(s.vy,s.vx);ctx.save();ctx.translate(s.x,s.y);ctx.rotate(a);
@@ -1217,6 +1239,34 @@ function buildBoss3D(el){
   const shield=addN(root,N(E.G.sph,'#9fd0ff',{sx:62,sy:62,sz:62,a:.22,hidden:true}));
   return{root,core,ring,spikes,eyes,shield,baseEmi};
 }
+function buildSword3D(){
+  const root=N(null);
+  const blade=addN(root,N(geo('gs_blade',()=>gT(boxS(16,230,4),0,137,0)),'#e9eefc'));
+  const tip=addN(root,N(geo('gs_tip',()=>gT(gS(gRz(cylG(0,8,22,4),Math.PI),1,1,.3),0,11,0)),'#e9eefc'));
+  addN(root,N(geo('gs_fuller',()=>gT(boxS(4,200,4.6),0,150,0)),'#b9c6ea'));
+  addN(root,N(geo('gs_guard',()=>boxS(74,10,13)),'#f2b64b',{y:257,emi:[.25,.18,.05]}));
+  addN(root,N(geo('gs_grip',()=>cylG(4.2,4.2,46,8)),'#3a2a1a',{y:285}));
+  addN(root,N(geo('gs_pommel',()=>sphG(8.5,10,8)),'#f2b64b',{y:313,emi:[.25,.18,.05]}));
+  addN(root,N(E.G.sph,'#ff7a3d',{y:257,z:7,sx:5,sy:5,sz:2,unlit:true}));
+  return{root,glow:[blade,tip]};
+}
+function drawSwords3D(g,t){const G=E.G,S=E.scene;
+  for(const c of (g.cracks||[])){const fade=c.t<3.4?1:clamp(4.4-c.t,0,1),glow=clamp(1-c.t/1.3,0,1),rev=c.t*1100;
+    decal(G.disc,c.x,c.y,64,58,0,'#07050c',.6*fade,.31);
+    for(const sg of c.seg){if(sg[5]>rev)continue;const dx=sg[2]-sg[0],dy=sg[3]-sg[1],L=Math.hypot(dx,dy)+sg[4]*.6,a=Math.atan2(dy,dx),mx=(sg[0]+sg[2])/2,my=(sg[1]+sg[3])/2;
+      decal(G.plane,mx,my,L,sg[4],-a,'#06040a',.92*fade,.32);
+      if(glow>0)decal(G.plane,mx,my,L,sg[4]*.38,-a,'#ffcf6b',glow,.33,true);}
+    if(glow>0)for(let i=0;i<2;i++){const sg=c.seg[Math.floor(Math.random()*c.seg.length)];if(sg[5]<=rev)spr(sg[2],4+rand(0,10),sg[3],10,10,'#ffcf6b',glow*.9);}}
+  for(const s of (g.swords||[])){
+    const k=clamp(s.t/s.fall,0,1),fallY=s.hit?0:(1-k*k)*760,sinkT=s.t-(s.fall+s.stay-.5),sink=sinkT>0?sinkT/.5*260:0,sw=S.sword;
+    sw.root.x=s.x;sw.root.z=s.y;sw.root.y=fallY-42-sink;
+    const em=s.hit?clamp(1-(s.t-s.fall)/1,0,1)*.55+.18:.6;for(const n of sw.glow)n.emi=[em,em*.93,em*.72];
+    drawNode(sw.root,E.I,null);
+    if(!s.hit){decal(G.disc,s.x,s.y,20+80*k,20+80*k,0,'#ffe08a',.12+.3*k,.9,true);decal(G.ring,s.x,s.y,96,96,0,'#ffe08a',.45+.35*Math.sin(t*20),.95,true);
+      spr(s.x,fallY+150,s.y,70,360,'#fff3c0',.5);spr(s.x,fallY,s.y,40,40,'#ffffff',.8);}
+    else{const q=s.t-s.fall;if(q<.4){const f=1-q/.4;spr(s.x,24,s.y,420*f+60,420*f+60,'#ffe7a8',f);spr(s.x,10,s.y,160,160,'#ffffff',f);E.flash=Math.max(E.flash,f);}
+      spr(s.x,110,s.y,50,260,'#ffe7a8',.35*clamp(1-q,0,1));}}
+}
 function buildScene3D(g){
   const gl=E.gl,W=g.W,H=g.H,el=g.boss.el.c,elc=rgb(el);
   if(E.scene&&E.scene.tex)gl.deleteTexture(E.scene.tex);
@@ -1232,7 +1282,7 @@ function buildScene3D(g){
   const nx=Math.max(2,Math.round(W/240)),nz=Math.max(2,Math.round(H/240));
   for(let i=0;i<=nx;i++){const x=i/nx*W;pil(x,-off,rand(120,160));pil(x,H+off,24);}
   for(let i=1;i<nz;i++){const z=i/nz*H;pil(-off,z,rand(90,130));pil(W+off,z,rand(90,130));}
-  S.hero=buildHero3D(g.key,g.c.color);S.boss=buildBoss3D(el);
+  S.hero=buildHero3D(g.key,g.c.color);S.boss=buildBoss3D(el);S.sword=buildSword3D();
   const sky=[.72,.69,.88].map((v,i)=>(v*.75+elc[i]*.25)*.62);S.sky=sky;S.ground=[.12,.1,.16];S.fog=[.051,.04,.086];
   E.arrows=[];E.blood=[];E.pools=[];E.scene=S;E.tx=W/2+(g.p.x-W/2)*.55;E.tz=H/2+(g.p.y-H/2)*.55;E.px=g.p.x;E.py=g.p.y;E.walk=0;E.face=g.p.face;E.bf=g.b.face;E.last=performance.now();E.fc=0;E.ft=16;
 }
@@ -1355,6 +1405,7 @@ function render3D(){
     if(b.stunT>0)for(let i=0;i<3;i++){const a=t*5+i*TAU/3;spr(b.x+Math.cos(a)*30,fl+62,b.y+Math.sin(a)*30,16,16,'#ffe08a',1);}
   }
   bleed3D(g,rdt,58+Math.sin(t*2)*5,t);
+  drawSwords3D(g,t);
   /* totems */
   for(const tt of g.totems){lit(geo('tpole',()=>cylG(2.5,3.5,34,6)),trs(tt.x,17,tt.y,0,0,0,1,1,1),[.9,1,.98],[0,0,0],1);flat(G.sph,trs(tt.x,40,tt.y,0,0,0,7,7,7),[.38,.94,.86,1],null,1);
     decal(G.disc,tt.x,tt.y,tt.r,tt.r,0,g.c.color,.12+.05*Math.sin(t*6),.7);decal(G.ring,tt.x,tt.y,tt.r,tt.r,0,g.c.color,.7,.8,true);spr(tt.x,40,tt.y,34,34,'#62f0dc',.8);}
