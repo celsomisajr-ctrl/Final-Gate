@@ -664,7 +664,7 @@ const SFX=(()=>{
     boom(){noise({ft:'lowpass',f:900,f2:90,dur:.5,vol:.5});tone({f:95,f2:35,dur:.42,vol:.5});},
     splat(){noise({ft:'lowpass',f:700,f2:200,q:3,dur:.25,vol:.3});tone({f:260,f2:120,dur:.15,vol:.12});},
     sizzle(){noise({ft:'highpass',f:2500,dur:.12,vol:.07});},
-    shock(){sample('shock',.44,()=>L.bolt());},
+    shock(){sample('shock',.35,()=>L.bolt());},
     storm(){sample('storm',.7,()=>L.bolt());},
     totem(){sample('totem',.8,()=>L.heal());},
     bolt(){noise({ft:'highpass',f:1800,dur:.3,vol:.32});noise({ft:'lowpass',f:600,f2:80,dur:.45,vol:.4,d:.03});tone({f:70,f2:35,dur:.35,vol:.35,d:.03});},
