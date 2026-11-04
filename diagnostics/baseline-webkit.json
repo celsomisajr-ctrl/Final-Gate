@@ -1,0 +1,113 @@
+{
+  "snapshot": {
+    "state": "running",
+    "audioTime": 0.5108390022675737,
+    "muted": false,
+    "sampleRate": 44100,
+    "audioSession": "auto",
+    "hardwareMute": "not observable by Web Audio"
+  },
+  "events": [
+    {
+      "event": "init",
+      "time": 711,
+      "state": "none",
+      "audioTime": null,
+      "muted": false,
+      "voices": 0,
+      "visible": true,
+      "active": true,
+      "reason": "pointerdown",
+      "trusted": true,
+      "pointerType": "touch"
+    },
+    {
+      "event": "created",
+      "time": 713,
+      "state": "suspended",
+      "audioTime": 0,
+      "muted": false,
+      "voices": 0,
+      "visible": true,
+      "active": true
+    },
+    {
+      "event": "mute-change",
+      "time": 715,
+      "state": "suspended",
+      "audioTime": 0,
+      "muted": true,
+      "voices": 0,
+      "visible": true,
+      "active": true
+    },
+    {
+      "event": "statechange",
+      "time": 749,
+      "state": "running",
+      "audioTime": 0,
+      "muted": true,
+      "voices": 0,
+      "visible": true,
+      "active": true
+    },
+    {
+      "event": "init",
+      "time": 752,
+      "state": "running",
+      "audioTime": 0.0029024943310657597,
+      "muted": true,
+      "voices": 0,
+      "visible": true,
+      "active": true,
+      "reason": "pointerdown",
+      "trusted": true,
+      "pointerType": "touch"
+    },
+    {
+      "event": "mute-change",
+      "time": 752,
+      "state": "running",
+      "audioTime": 0.0029024943310657597,
+      "muted": false,
+      "voices": 0,
+      "visible": true,
+      "active": true
+    },
+    {
+      "event": "init",
+      "time": 752,
+      "state": "running",
+      "audioTime": 0.0029024943310657597,
+      "muted": false,
+      "voices": 0,
+      "visible": true,
+      "active": true,
+      "reason": "init",
+      "trusted": null
+    },
+    {
+      "event": "play-attempt",
+      "time": 784,
+      "state": "running",
+      "audioTime": 0.034829931972789115,
+      "muted": false,
+      "voices": 0,
+      "visible": true,
+      "active": true,
+      "sound": "click"
+    },
+    {
+      "event": "play-scheduled",
+      "time": 786,
+      "state": "running",
+      "audioTime": 0.03773242630385488,
+      "muted": false,
+      "voices": 1,
+      "visible": true,
+      "active": true,
+      "sound": "click"
+    }
+  ],
+  "errors": []
+}
