@@ -1,0 +1,10 @@
+{
+  // Cloudflare Worker that hands out short-lived TURN relay credentials for co-op.
+  // Deploy from GitHub with "Root directory" set to /cloudflare. Add the secrets
+  // TURN_KEY_ID and TURN_KEY_API_TOKEN in the Worker's Settings after the first deploy.
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "final-gate-turn",
+  "main": "turn-worker.js",
+  "compatibility_date": "2025-06-01",
+  "workers_dev": true
+}
