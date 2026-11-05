@@ -817,7 +817,7 @@ function later(t,fn){game.timers.push({t,fn,h:game.cur});}
 const PK=['p','d','c','key','slots','cds','cdMax','mc','sbolts','storm','spirit','empFury'];
 function heroIn(h){const g=game;if(!g||!h||g.cur===h)return;const o=g.cur;if(o)for(const k of PK)o[k]=g[k];for(const k of PK)g[k]=h[k];g.cur=h;}
 const meHero=()=>game.heroes[game.me];
-const EK=['bh','face','orbW','px','py','riseOn','skyH','walk','arrows'];
+const EK=['lh','lpT','lpOn','lt','face','orbW','px','py','riseOn','skyH','walk','arrows'];
 function eSwap(from,to){if(from===to)return;if(from){const o=from.E||(from.E={});for(const k of EK)o[k]=E[k];}const n=to.E||(to.E={});for(const k of EK)E[k]=n[k];if(E.face===undefined)E.face=to.p.face;if(E.px===undefined){E.px=to.p.x;E.py=to.p.y;E.walk=0;}}
 function withHeroE(h,fn){const me=meHero();if(!h||h===me){heroIn(me);return fn();}heroIn(h);eSwap(me,h);try{return fn();}finally{eSwap(h,me);heroIn(me);}}
 function makeHero(spec,i,n,W,H,mlm){const key=spec.cls,c=CLASSES[key],d=derive(key,spec.alloc);
@@ -841,8 +841,8 @@ function stunBoss(t){const b=game.b;if(b.dead)return;SFX.play('stun');b.stunT=Ma
 /* ---------- hero skills ---------- */
 const SKILLS={
   dash:{name:'Leap Strike',cost:20,cd:6,range:320,ownSfx:true,desc:d=>`Leap through the air and crash down beside the boss for ${dmg(d,70,1.6,0)} damage, stunning it for 1.2 seconds. You can't be hit mid-leap. Follow up with Whirlwind while it's stunned.`,
-    cast(){const g=game,p=g.p,b=g.b,d=g.d,D=dist(p,b)||1,ux=(b.x-p.x)/D,uy=(b.y-p.y)/D,stop=b.r+p.r+6,len=Math.max(0,D-stop),T=.45;
-      SFX.play('swDash');p.leap=T;p.face=Math.atan2(uy,ux);
+    cast(){const g=game,p=g.p,b=g.b,d=g.d,D=dist(p,b)||1,ux=(b.x-p.x)/D,uy=(b.y-p.y)/D,stop=b.r+p.r+6,len=Math.max(0,D-stop),T=.62;
+      SFX.play('swDash');p.leap=T;p.leapT=T;p.face=Math.atan2(uy,ux);
       if(len>2)startDash({x:ux,y:uy},len,T);else p.iframe=Math.max(p.iframe,T+.08);
       later(T,()=>{const g2=game,b2=g2.b,p2=g2.p;SFX.play('boom');shake(9);
         fx({type:'ring',x:p2.x,y:p2.y,r0:16,r1:120,color:'#ffe7a8',dur:.4,w:6});burst(p2.x,p2.y,'#ffe7a8',26,260,3,.6);burst(p2.x,p2.y,'#8a7fa8',16,200,4,.7);
@@ -1369,7 +1369,7 @@ function drawBoss(ctx,g){
 function drawPlayer(ctx,g){
   const p=g.p,c=g.c;if(p.dead)return;
   {const inR=!g.b.dead&&dist(p,g.b)-p.r-g.b.r<=g.d.range;ctx.save();ctx.strokeStyle=hexA(c.color,inR?0.55:0.22);ctx.lineWidth=inR?2:1.5;ctx.setLineDash([4,7]);circle(ctx,p.x,p.y,p.r+g.d.range);ctx.stroke();ctx.restore();}
-  const lift=p.leap>0?Math.sin((1-p.leap/0.45)*Math.PI)*22:0;
+  const lift=p.leap>0?Math.sin((1-p.leap/(p.leapT||0.45))*Math.PI)*22:0;
   ctx.save();ctx.fillStyle='rgba(0,0,0,0.35)';ctx.beginPath();ctx.ellipse(p.x,p.y+p.r*0.85,p.r*(lift?0.7:1),p.r*0.35,0,0,TAU);ctx.fill();
   if(p.buffs.whirl){ctx.strokeStyle=hexA(c.color,0.7);ctx.lineWidth=3;for(let i=0;i<3;i++){const a=g.t*14+i*TAU/3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+40,a,a+0.8);ctx.stroke();}}
   ctx.translate(p.x,p.y-lift);
@@ -1515,7 +1515,7 @@ function buildHero3D(key,color){
   const H={root,body,armR,armL,legL,legR,key};
   if(key==='swordsman'){
     addN(body,N(geo('helm',()=>sphG(7.7,10,5,Math.PI/2)),MT,{y:hy}));
-    addN(armR,N(geo('blade',()=>boxS(30,2.6,1.3)),MT,{x:17,y:-12}));addN(armR,N(geo('guard',()=>boxS(1.8,1.8,9)),'#f2b64b',{x:2.5,y:-12}));
+    H.sw=[addN(armR,N(geo('blade',()=>boxS(30,2.6,1.3)),MT,{x:17,y:-12})),addN(armR,N(geo('guard',()=>boxS(1.8,1.8,9)),'#f2b64b',{x:2.5,y:-12}))];
     addN(armL,N(geo('shieldb',()=>boxS(2.6,15,12)),color,{x:3,y:-8}));
   }else if(key==='shaman'){
     addN(body,N(geo('hood',()=>cylG(0,8.8,14,7)),'#1f5c58',{y:hy+6}));
@@ -1866,6 +1866,55 @@ function greatswordGeos(){return{
   rune:geo('rb_rune',()=>gMerge(gT(boxS(118,5,3.8),92,-2,0),...[40,64,88,112,136].map(x=>gT(gRz(boxS(7,7,3.9),Math.PI/4),x,-2,0)))),
   guard:geo('rb_guard',()=>gMerge(gT(boxS(7,50,9),15,0,0),gT(boxS(12,10,10),15,26,0),gT(boxS(12,10,10),15,-26,0))),
   grip:geo('rb_grip',()=>gMerge(gT(boxS(30,5.5,5.5),-4,0,0),gT(boxS(8,10,10),-22,0,0)))};}
+/* Leap Strike: crouch, launch, arch back with the greatsword behind the head, then an overhead slam that lands with the hero */
+function leapLift(k){const H=105;return k<.5?H*Math.sin(k/.5*Math.PI/2):k<.62?H:H*(1-Math.pow((k-.62)/.38,2));}
+function leapStrike3D(g,p,b,Hh,lift,rdt,t){
+  const T=p.leapT,air=p.leap>0;
+  if(air){if(!E.lpOn){E.lpOn=true;E.lh=[];}E.lpT=.42;}
+  else{if(!g.paused)E.lpT=Math.max(0,(E.lpT||0)-rdt);
+    if(E.lpOn){E.lpOn=false;const q=E.lt;if(q)for(let i=0;i<26;i++)ep({x:q[0],y:Math.max(4,q[1]),z:q[2],vx:rand(-160,160),vy:rand(60,260),vz:rand(-160,160),g:-520,dur:rand(.35,.7),s:rand(5,9),c:i%3?'#c9a6ff':'#ffffff',a:.95});}}
+  const k=air?1-p.leap/T:1,post=air?0:1-E.lpT/.42,sm=x=>x*x*(3-2*x),cl=x=>clamp(x,0,1);
+  const launch=cl(k/.12),wind=sm(cl((k-.06)/.4)),s=cl((k-.6)/.37),es=Math.pow(s,1.6);
+  /* angles in the body's side plane: 0 = straight ahead, + = up */
+  const restArm=1.0-Math.PI/2,restBlade=1.0;
+  let armA=restArm+(1.85-restArm)*wind,blade=restBlade+(3.5-restBlade)*wind,lean=-.2*(1-launch)+.45*wind;
+  if(s>0){armA=1.85+(-.45-1.85)*es;blade=3.5+(.38-3.5)*es;lean=.45+(-.55-.45)*es;}
+  const rec=post>.55?sm((post-.55)/.45):0;  /* recover to stance at the end */
+  if(rec){armA+=(restArm-armA)*rec;blade+=(restBlade-blade)*rec;lean*=1-rec;}
+  const rz=armA+Math.PI/2;
+  Hh.armR.rz=rz;Hh.armR.ry=0;Hh.armL.rz=rz-.12;Hh.armL.ry=0;Hh.armL.x=2;Hh.body.rz=lean;
+  if(air&&k<.12){Hh.body.y=-5*Math.sin(launch*Math.PI);Hh.legL.rz=.5;Hh.legR.rz=-.4;}
+  else if(air&&s<=0){Hh.body.y=0;Hh.legL.rz=1.1*wind+.2;Hh.legR.rz=-.65*wind;}
+  else if(air){Hh.body.y=0;Hh.legL.rz=1.3-.6*es;Hh.legR.rz=-.65+.15*es;}
+  else{const c=1-rec;Hh.body.y=-7*c;Hh.legL.rz=.7*c;Hh.legR.rz=-.5*c;}
+  /* hand and blade in the world */
+  const S2=1.22,f=E.face,cf=Math.cos(f),sf=Math.sin(f),cb=Math.cos(lean),sb=Math.sin(lean);
+  const hb=[12*Math.sin(rz),29-12*Math.cos(rz),11];  /* hand in body space */
+  const toW=v=>{const x=v[0]*cb-v[1]*sb,y=v[0]*sb+v[1]*cb;return[p.x+(x*cf-v[2]*sf)*S2,(y+Hh.body.y)*S2+lift,p.y+(x*sf+v[2]*cf)*S2];};
+  const hand=toW(hb),ba=blade+lean,dx=Math.cos(ba),dy=Math.sin(ba),dir=[dx*cf,dy,dx*sf];
+  const reach=150,tip=[hand[0]+dir[0]*reach,Math.max(2,hand[1]+dir[1]*reach),hand[2]+dir[2]*reach];E.lt=tip;
+  const a=air?Math.min(1,k/.1):post<.6?1:Math.max(0,1-(post-.6)/.4);
+  if(air&&s>0&&!g.paused)E.lh.push([hand,dir]);
+  /* glowing crescent along the slam, smoothed between frames */
+  let H2=E.lh||[];if(H2.length>12)H2=Array.from({length:12},(_,i)=>H2[Math.round(i*(H2.length-1)/11)]);const ta=air?1:Math.max(0,1-post*1.15);
+  if(H2.length>1&&ta>0){const pts=[];
+    const sub=Math.max(1,Math.min(4,Math.ceil(32/(H2.length-1))));
+    for(let i=0;i<H2.length-1;i++)for(let j=0;j<sub;j++){const u=j/sub,A=H2[i],B=H2[i+1],h=[0,1,2].map(m=>A[0][m]+(B[0][m]-A[0][m])*u);let d=[0,1,2].map(m=>A[1][m]+(B[1][m]-A[1][m])*u);const l=Math.hypot(...d)||1;d=d.map(v=>v/l);pts.push([h,[h[0]+d[0]*reach,Math.max(2,h[1]+d[1]*reach),h[2]+d[2]*reach]]);}
+    pts.push([H2[H2.length-1][0],[0,1,2].map(m=>H2[H2.length-1][0][m]+H2[H2.length-1][1][m]*reach)]);
+    const n=pts.length;
+    for(let i=0;i<n-1;i++){const u=(i+1)/n,A=pts[i],B=pts[i+1],w=ta*(.25+.75*u);
+      const mA=[0,1,2].map(m=>A[0][m]+(A[1][m]-A[0][m])*.55),mB=[0,1,2].map(m=>B[0][m]+(B[1][m]-B[0][m])*.55);
+      beam(mA,mB,70,'#5b2fb8',w*.35);beam(A[1],B[1],40,'#a46bff',w*.55);beam(A[1],B[1],12,'#f4ecff',w*.95);
+      const qA=[0,1,2].map(m=>A[0][m]+(A[1][m]-A[0][m])*.85),qB=[0,1,2].map(m=>B[0][m]+(B[1][m]-B[0][m])*.85);beam(qA,qB,22,'#c9a6ff',w*.4);
+      /* the slash's shadow on the floor */
+      if(i%2===0){const gx=(A[1][0]+B[1][0])/2,gz=(A[1][2]+B[1][2])/2;decal(E.G.disc,gx+SHX*14,gz+SHZ*14,26,26,0,'#05030a',.28*w,.35);}}
+    if(Math.random()<.8){const P=pts[Math.floor(rand(0,n))],u=rand(.4,1);ep({x:P[0][0]+(P[1][0]-P[0][0])*u,y:Math.max(4,P[0][1]+(P[1][1]-P[0][1])*u),z:P[0][2]+(P[1][2]-P[0][2])*u,vx:rand(-30,30),vy:rand(10,60),vz:rand(-30,30),dur:.6,s:rand(14,26),grow:20,c:'#2a1650',a:.35});}}
+  /* the greatsword itself, with a violet glow while it falls */
+  if(a>.02){beam(hand,tip,56,'#a46bff',(s>0&&air?.3:.12)*a);drawGreatsword(hand,dir,reach,a);
+    spr(tip[0],tip[1],tip[2],30,30,'#f4ecff',(s>0?.9:.45)*a);
+    if(air&&s<=0&&Math.random()<.5){const u=rand(.3,1);ep({x:hand[0]+dir[0]*reach*u,y:Math.max(4,hand[1]+dir[1]*reach*u),z:hand[2]+dir[2]*reach*u,vx:rand(-20,20),vy:rand(10,50),vz:rand(-20,20),dur:.4,s:5,c:'#c9a6ff',a:.9});}
+    const gx=(hand[0]+tip[0])/2,gz=(hand[2]+tip[2])/2,gL=Math.hypot(tip[0]-hand[0],tip[2]-hand[2]);if(gL>4)decal(E.G.plane,gx+SHX*20,gz+SHZ*20,gL,9,-Math.atan2(tip[2]-hand[2],tip[0]-hand[0]),'#05030a',.4*a,.35);}
+}
 function drawGreatsword(hand,dir,reach,a){if(a<=.02)return;
   const n=Math.hypot(dir[0],dir[1],dir[2])||1,X=[dir[0]/n,dir[1]/n,dir[2]/n];
   let W=[X[2],0,-X[0]];let wl=Math.hypot(W[0],W[2]);if(wl<.05){W=[1,0,0];wl=1;}W=W.map(v=>v/wl);
@@ -1982,7 +2031,7 @@ function render3D(){
     const mv=Math.hypot(p.x-E.px,p.y-E.py)/Math.max(rdt,1e-3);E.px=p.x;E.py=p.y;
     const moving=clamp(mv/120,0,1);E.walk+=rdt*Math.min(mv,400)*.09;
     const skyT=p.buffs.sky>0?(p.skyDur||3.35)-p.buffs.sky:-1,skyH=skyT<0?0:(skyT<.3?Math.sin(skyT/.3*Math.PI/2):p.buffs.sky<.3?Math.sin(p.buffs.sky/.3*Math.PI/2):1)*(80+Math.sin(t*3)*4);E.skyH=skyH;
-    const sk2=p.slamT>0?1-p.slamT/.3:0,lift=skyH+(p.leap>0?Math.sin((1-p.leap/.45)*Math.PI)*(g.key==='swordsman'?78:34):0)+(p.slamT>0?(sk2<.55?Math.sin(sk2/.55*Math.PI/2)*20:20*(1-(sk2-.55)/.45)):0);
+    const sk2=p.slamT>0?1-p.slamT/.3:0,lift=skyH+(p.leap>0?(p.leapT?leapLift(1-p.leap/p.leapT):Math.sin((1-p.leap/.45)*Math.PI)*34):0)+(p.slamT>0?(sk2<.55?Math.sin(sk2/.55*Math.PI/2)*20:20*(1-(sk2-.55)/.45)):0);
     Hh.root.x=p.x;Hh.root.y=lift;Hh.root.z=p.y;Hh.root.sx=Hh.root.sy=Hh.root.sz=1.22;
     let want=p.face;if(p.buffs.sky>0&&!b.dead)want=Math.atan2(b.y-p.y,b.x-p.x);else if(p.buffs.anchor){}else if(p.dash)want=Math.atan2(p.dash.vy,p.dash.vx);else if(moving>.3&&!(p.swingT>0)&&(p.mvx||p.mvy))want=Math.atan2(p.mvy,p.mvx);
     E.face+=Math.atan2(Math.sin(want-E.face),Math.cos(want-E.face))*Math.min(1,rdt*14);Hh.root.ry=-E.face;
@@ -1995,9 +2044,10 @@ function render3D(){
       if(p.muzzle>0){p.muzzle-=rdt;const fx2=Math.cos(E.face),fz=Math.sin(E.face),sd=(p.mside||1)*11*1.22,mx2=p.x+fx2*40-fz*sd,mz=p.y+fz*40+fx2*sd;spr(mx2,24,mz,30,30,'#ffe7a0',1);spr(mx2,24,mz,12,12,'#ffffff',1);
         if(Math.random()<.5)spr(p.x-fz*sd*.6+rand(-6,6),10+rand(0,6),p.y+fx2*sd*.6+rand(-6,6),5,5,'#d9b25a',.9);}}
     else Hh.body.rz=g.key==='brawler'?-.14:0;
-    Hh.body.x=0;if(!(p.rise>0))E.riseOn=false;
+    Hh.body.x=0;if(!(p.rise>0))E.riseOn=false;if(Hh.sw)for(const n of Hh.sw)n.hidden=!!(p.rise>0||(p.leapT&&(p.leap>0||E.lpT>0)));
     if(p.dash&&p.dash.roll){const k=clamp(1-p.dash.t/p.dash.dur,0,1),th=-k*TAU;Hh.body.rz=th;Hh.body.x=17*Math.sin(-th);Hh.body.y=17-17*Math.cos(th);
       Hh.legL.rz=Hh.legR.rz=1.5;Hh.armR.rz=Hh.armL.rz=2.3;Hh.armR.ry=Hh.armL.ry=0;decal(G.thin,p.x,p.y,18,18,0,'#d9c9a0',.4,.8);}
+    else if(p.leapT&&(p.leap>0||E.lpT>0))leapStrike3D(g,p,b,Hh,lift,rdt,t);
     else if(p.rise>0){const k=1-p.rise/.4,sl=k<.28?0:Math.min(1,(k-.28)/.42),es=1-Math.pow(1-sl,2.2);
       if(!E.riseOn){E.riseOn=true;E.bh=[];}
       const ry=-2.05+3.3*es,rz=.1+.62*es,twist=-.4+.8*es;
