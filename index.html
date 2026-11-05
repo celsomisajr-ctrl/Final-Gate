@@ -2439,7 +2439,12 @@ const NET=(()=>{
   const ALPH='ABCDEFGHJKMNPQRSTUVWXYZ23456789',PRE='finalgate-';
   const qs=new URLSearchParams(location.search);
   const say=(t,err)=>{const m=$('#co-msg');if(!m)return;m.textContent=t||'';m.classList.toggle('err',!!err);};
-  function peerOpts(){const o={debug:0};const ps=qs.get('peer');if(ps){const a=ps.split(':');o.host=a[0];o.port=+a[1]||9000;o.path='/';o.secure=false;}if(qs.get('noice'))o.config={iceServers:[]};return o;}
+  /* ways for two devices to find each other: public STUN servers, PeerJS's free relay, and an optional
+     dedicated relay (TURN). To add one, fill RELAY with your provider's urls/username/credential. */
+  const RELAY=null; // e.g. {urls:['turn:a.relay.metered.ca:80','turns:a.relay.metered.ca:443?transport=tcp'],username:'…',credential:'…'}
+  const ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'},
+    {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
+  function peerOpts(){const o={debug:0,config:{iceServers:RELAY?[RELAY,...ICE]:ICE}};const ps=qs.get('peer');if(ps){const a=ps.split(':');o.host=a[0];o.port=+a[1]||9000;o.path='/';o.secure=false;}if(qs.get('noice'))o.config={iceServers:[]};return o;}
   let libP=null;
   function loadLib(){if(window.Peer)return Promise.resolve();return libP||(libP=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=window.FG_PEERJS||'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>{libP=null;rej(new Error('lib'));};document.head.appendChild(sc);}));}
   const errText=e=>e&&['network','server-error','socket-error','socket-closed'].includes(e.type)?'Online play is unreachable right now. Check your connection.':'Connection problem. Please try again.';
@@ -2468,7 +2473,7 @@ const NET=(()=>{
     try{await loadLib();}catch(e){say(OFFLINE_MSG,true);return;}
     const pr=new window.Peer(undefined,peerOpts());N.peer=pr;
     pr.on('open',id=>{N.myId=id;const c=pr.connect(PRE+code,{reliable:true});N.host=c;
-      const to=setTimeout(()=>{if(!N.role){say("Couldn't reach room "+code+'. Check the code and try again.',true);reset();}},15000);
+      const to=setTimeout(()=>{if(!N.role){say('Found room '+code+" but couldn't connect to it. One of your networks is blocking direct connections. Try again, or have one of you switch networks (home Wi-Fi or a phone hotspot).",true);reset();}},20000);
       c.on('open',()=>{clearTimeout(to);N.role='guest';N.code=code;N.phase='lobby';say('');send({t:'hello'});roomUi();});
       c.on('data',onHost);c.on('close',hostGone);c.on('error',hostGone);});
     pr.on('error',e=>{if(N.role)return;say(e.type==='peer-unavailable'?'No room with code '+code+'.':errText(e),true);reset();});
