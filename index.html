@@ -253,6 +253,11 @@ body.ml .bb-right .auto-btn{padding:0 6px}
 .banner b{display:block; font-family:var(--f-display); font-weight:900; font-size:clamp(17px,2.8vw,26px); line-height:1.05; color:var(--el); text-shadow:0 2px 10px var(--shadow)}
 .banner span{display:block; margin-top:2px; font-size:11.5px; color:var(--ink); text-shadow:0 1px 6px var(--shadow)}
 .banner.hero b{color:var(--c)}
+/* end of fight: Victory / You have fallen, centred and larger */
+.banner.end{top:50%; transform:translate(-50%,-50%) scale(.92); width:min(92%,720px)}
+.banner.end.show{transform:translate(-50%,-50%) scale(1)}
+.banner.end b{font-size:clamp(40px,7vw,72px); text-shadow:0 3px 18px var(--shadow),0 0 2px var(--shadow)}
+.banner.end span{margin-top:8px; font-size:clamp(13px,1.6vw,17px)}
 .pause{position:absolute; inset:0; display:grid; place-items:center; background:var(--veil)}
 .pause-card{background:var(--panel); padding:24px; display:flex; flex-direction:column; gap:10px; max-width:320px; clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
 .pause-card h3{font-family:var(--f-display); font-size:36px; font-weight:900}
@@ -359,6 +364,9 @@ body.ml .bb-right .pause-btn{height:24px; width:28px; font-size:11px}
 body.ml .banner{top:7%}
 body.ml .banner b{font-size:15px}
 body.ml .banner span{font-size:9.5px}
+body.ml .banner.end{top:50%}
+body.ml .banner.end b{font-size:38px}
+body.ml .banner.end span{font-size:12.5px}
 /* controls: half size, see-through */
 body.ml .joy{display:block; position:absolute; z-index:3; left:max(34px, calc(env(safe-area-inset-left,0px) + 22px)); bottom:max(24px, calc(env(safe-area-inset-bottom,0px) + 16px)); width:84px; height:84px; border-radius:50%; background:rgba(255,255,255,.04); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18); pointer-events:none}
 body.ml .joy i{position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; background:rgba(255,255,255,.2); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.38); transition:transform .06s}
@@ -941,7 +949,7 @@ function endFight(win){
   if(win){store.wins++;if(!store.best||g.t<store.best)store.best=g.t;}
   save();
   const hold=win?3000:2200; // a win stays on the arena for 3 s, effects still playing, before the results
-  banner(win?'Victory':'You have fallen',win?`${g.boss.name} is defeated.`:`${g.boss.name} still stands.`,win?'hero':'',win?hold:undefined);
+  banner(win?'Victory':'You have fallen',win?`${g.boss.name} is defeated.`:`${g.boss.name} still stands.`,win?'hero end':'end',hold+400);
   setTimeout(()=>{if(game===g)showResult(g);},hold);
 }
 let bannerTO=0;
