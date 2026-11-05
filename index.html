@@ -1762,6 +1762,23 @@ function paAxis(a){const dx=a.ox<a.x?-1:1,dz=.45,l=Math.hypot(dx,dz);return{ang:
 function longArrow(ag,x,y,z,em,flc,wood,steel,ang){const M=mul(trs(x,y,z,0,-ang,0,1,1,1),mul(trs(0,0,0,0,0,-PA_TILT,1,1,1),trs(0,0,0,0,0,-Math.PI/2,4,4,4)));
   lit(ag.shaft,mul(M,trs(0,0,0,0,0,0,PA_LEN,1,1)),wood,em,1);lit(ag.head,M,steel,em.map(v=>v*2),1);
   lit(ag.fl,mul(M,trs(-26*(PA_LEN-1),0,0,0,0,0,1,1,1)),flc,flc.map(v=>v*(em[0]?.4:.3)),1);}
+/* Rising Blade greatsword: built along +x (hilt at 0, tip at 205), then laid along the swing direction */
+function greatswordGeos(){return{
+  blade:geo('rb_blade',()=>gMerge(gT(boxS(172,30,3),106,0,0),gT(gRz(boxS(21.2,21.2,3),Math.PI/4),190,0,0))),
+  edge:geo('rb_edge',()=>gMerge(gT(boxS(166,2.6,3.6),104,14,0),gT(gRz(boxS(2.6,22,3.6),-Math.PI/4+.02),197,7.4,0))),
+  rune:geo('rb_rune',()=>gMerge(gT(boxS(118,5,3.8),92,-2,0),...[40,64,88,112,136].map(x=>gT(gRz(boxS(7,7,3.9),Math.PI/4),x,-2,0)))),
+  guard:geo('rb_guard',()=>gMerge(gT(boxS(7,50,9),15,0,0),gT(boxS(12,10,10),15,26,0),gT(boxS(12,10,10),15,-26,0))),
+  grip:geo('rb_grip',()=>gMerge(gT(boxS(30,5.5,5.5),-4,0,0),gT(boxS(8,10,10),-22,0,0)))};}
+function drawGreatsword(hand,dir,reach,a){if(a<=.02)return;
+  const n=Math.hypot(dir[0],dir[1],dir[2])||1,X=[dir[0]/n,dir[1]/n,dir[2]/n];
+  let W=[X[2],0,-X[0]];let wl=Math.hypot(W[0],W[2]);if(wl<.05){W=[1,0,0];wl=1;}W=W.map(v=>v/wl);
+  const Z=[X[1]*W[2]-X[2]*W[1],X[2]*W[0]-X[0]*W[2],X[0]*W[1]-X[1]*W[0]],sx=reach/205,sw=.9+sx*.35;
+  const M=new Float32Array([X[0]*sx,X[1]*sx,X[2]*sx,0, W[0]*sw,W[1]*sw,W[2]*sw,0, Z[0]*sw,Z[1]*sw,Z[2]*sw,0, hand[0],hand[1],hand[2],1]);
+  const H=new Float32Array([X[0]*sw,X[1]*sw,X[2]*sw,0, W[0]*sw,W[1]*sw,W[2]*sw,0, Z[0]*sw,Z[1]*sw,Z[2]*sw,0, hand[0],hand[1],hand[2],1]);
+  const gs=greatswordGeos();
+  lit(gs.blade,M,[.74,.7,.6],[.07,.06,.04],a);lit(gs.edge,M,[1,.86,.45],[.75,.55,.18],a);lit(gs.rune,M,[.3,.85,1],[.3,.85,1],a);
+  lit(gs.guard,H,[.96,.72,.25],[.25,.16,.04],a);lit(gs.grip,H,[.22,.16,.3],[0,0,0],a);
+  spr(hand[0]+X[0]*15*sw,hand[1]+X[1]*15*sw,hand[2]+X[2]*15*sw,18,18,'#7fe0ff',.9*a);}
 function arrowGeos(){return{
   shaft:geo('ar_shaft',()=>gT(boxS(26,1.5,1.5),-13,0,0)),
   head:geo('ar_head',()=>gT(gRz(cylG(0,2.8,8,5),-Math.PI/2),-4,0,0)),
@@ -1880,8 +1897,8 @@ function render3D(){
         const H2=E.bh;for(let i=0;i<H2.length-1;i++){const u=i/(H2.length-1),A=H2[i],B=H2[i+1];
           beam(A[0],A[1],10,'#3c4f9a',a*u*.55);beam(A[1],B[1],34,'#7fe0ff',a*u*.4);beam(A[1],B[1],8,'#e6fbff',a*u*.9);
           const m1=[(A[0][0]+A[1][0])/2,(A[0][1]+A[1][1])/2,(A[0][2]+A[1][2])/2],m2=[(B[0][0]+B[1][0])/2,(B[0][1]+B[1][1])/2,(B[0][2]+B[1][2])/2];beam(m1,m2,22,'#9fe8ff',a*u*.25);}
-        /* the spirit blade */
-        beam(hand,tip,40,'#7fe0ff',.4*a);beam(hand,tip,16,'#bff4ff',.85*a);beam(hand,tip,5,'#ffffff',a);
+        /* the greatsword: an oversized blade drawn along the swing, with a soft spirit glow */
+        beam(hand,tip,60,'#7fe0ff',.14*a);drawGreatsword(hand,dir,reach,a);
         spr(tip[0],tip[1],tip[2],34,34,'#ffffff',.85*a);spr(hand[0],hand[1],hand[2],26,26,'#bff4ff',.7*a);
         /* its shadow on the floor */
         const gx=(hand[0]+tip[0])/2,gz=(hand[2]+tip[2])/2,gL=Math.hypot(tip[0]-hand[0],tip[2]-hand[2]);if(gL>4)decal(E.G.plane,gx+SHX*20,gz+SHZ*20,gL,9,-Math.atan2(tip[2]-hand[2],tip[0]-hand[0]),'#05030a',.45*a,.35);
