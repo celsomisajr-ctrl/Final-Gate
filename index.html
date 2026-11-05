@@ -814,8 +814,8 @@ const SKILLS={
     cast(){const b=game.b,p=game.p;SFX.play('arrow');(game.skyArrows||(game.skyArrows=[])).push({x:b.x,y:b.y,t:0,fall:.55,stay:.9,dmg:dmg(game.d,70,1.6,0),hit:false,ox:p.x,oy:p.y});}},
   tumble:{name:'Tumble',cost:15,cd:7,desc:()=>`Roll a short way (away from the boss unless you're moving). Your next 2 basic attacks deal 50% more and always crit.`,
     cast(){startDash(aim(true),170,0.26);game.p.dash.roll=true;game.p.empower=2;}},
-  rain:{name:'Arrow Rain',cost:35,cd:11,range:460,desc:d=>`Rain arrows on the boss's area for 3 seconds, ${dmg(d,12,0.34,0)} damage every 0.3s.`,
-    cast(){const b=game.b;zone({x:b.x,y:b.y,r:115,delay:0.3,ticks:10,interval:0.3,dmg:dmg(game.d,12,0.34,0),color:'#9be15d',rain:true});}},
+  rain:{name:'Arrow Rain',cost:35,cd:11,range:460,desc:d=>`Leap into the air and loose a volley of arrows on the boss's area for 3 seconds, ${dmg(d,12,0.34,0)} damage every 0.3s. You can't move until you land.`,
+    cast(){const b=game.b,p=game.p;p.buffs.sky=3.35;p.skyDur=3.35;p.dash=null;zone({x:b.x,y:b.y,r:115,delay:0.3,ticks:10,interval:0.3,dmg:dmg(game.d,12,0.34,0),color:'#9be15d',rain:true,fromBow:true});}},
   focus:{name:"Hunter's Focus",cost:30,cd:15,desc:()=>`Attack 60% faster for 5 seconds.`,
     cast(){const p=game.p;p.buffs.haste=5;p.hasteMul=1.6;}},
   phoenix:{name:'Phoenix Shot',ult:true,cost:60,cd:40,desc:d=>`Fire a blazing arrow for ${dmg(d,250,3.5,0)} damage.`,
@@ -1041,7 +1041,7 @@ function updatePlayer(dt){
   if(keys.has('a')||keys.has('arrowleft'))mx-=1;
   if(keys.has('d')||keys.has('arrowright'))mx+=1;
   if(joy){const dx=joy.x-joy.sx,dy=joy.y-joy.sy,l=Math.hypot(dx,dy);if(l>8){const k=Math.min(1,l/(joy.dom?30:40));mx=dx/l*k;my=dy/l*k;}}
-  if(p.buffs.anchor){mx=0;my=0;}
+  if(p.buffs.anchor||p.buffs.sky){mx=0;my=0;}
   const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}
   p.mvx=mx;p.mvy=my;p.auto=false;
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0)delete p.buffs[k];}
@@ -1058,7 +1058,7 @@ function updatePlayer(dt){
     if(ds.t<=0)p.dash=null;
   }else{
     const sp=d.speed*(p.slowT>0?0.55:1)*(p.buffs.whirl?1.25:1);
-    if(!mx&&!my&&store.autoMove!==false&&!b.dead&&!p.buffs.anchor){
+    if(!mx&&!my&&store.autoMove!==false&&!b.dead&&!p.buffs.anchor&&!p.buffs.sky){
       const gap=dist(p,b)-p.r-b.r,t=dirTo(p,b);let ax=0,ay=0;
       if(gap>d.range*0.85){ax=t.x;ay=t.y;}
       else if(g.c.ranged&&gap<Math.min(70,d.range*0.4)){ax=-t.x;ay=-t.y;}
@@ -1074,7 +1074,7 @@ function updatePlayer(dt){
   p.x=clamp(p.x,22,g.W-22);p.y=clamp(p.y,22,g.H-22);
   p.face=Math.atan2(b.y-p.y,b.x-p.x);
   p.atkT-=dt;
-  if(p.atkT<=0&&!b.dead&&(p.buffs.anchor||dist(p,b)-p.r-b.r<=d.range)){basicAttack();p.atkT=1/(d.aps*(p.buffs.haste?p.hasteMul:1));}
+  if(p.atkT<=0&&!b.dead&&!p.buffs.sky&&(p.buffs.anchor||dist(p,b)-p.r-b.r<=d.range)){basicAttack();p.atkT=1/(d.aps*(p.buffs.haste?p.hasteMul:1));}
 }
 function updateBoss(dt){
   const g=game,p=g.p,b=g.b;if(b.dead)return;
@@ -1820,12 +1820,28 @@ function bleed3D(g,rdt,fl,t){
 }
 function rainArrows(g,rdt){
   const A=E.arrows||(E.arrows=[]),G=E.G;
+  const p=g.p,air=p.buffs.sky>0&&!p.dead;
   for(const z of g.zones){if(!z.rain)continue;const fin=z.done>=z.ticks;if(fin)continue;
+    if(z.fromBow&&air){
+      const f=E.face,cf=Math.cos(f),sf=Math.sin(f),S2=1.22,lean=.32,bx=p.x+(11*cf+8*sf)*S2,bz=p.y+(11*sf-8*cf)*S2,by=(E.skyH||0)+27*S2+11*Math.sin(lean);
+      z.sp=(z.sp||0)-rdt;while(z.sp<=0){z.sp+=1/18;const rr=Math.sqrt(Math.random())*z.r*.85,ra=rand(0,TAU),T=[z.x+Math.cos(ra)*rr,0,z.y+Math.sin(ra)*rr];
+        const S0=[bx,by,bz],D=Math.hypot(T[0]-S0[0],T[2]-S0[2]);A.push({bow:true,S:S0,T,h:60+D*.22,t:0,dur:.42+D/1400});
+        spr(bx,by,bz,22,22,g.c.color,.8);}
+      continue;}
     if(!z.vol){const b0=rand(0,TAU);z.vol=[b0,b0+rand(1.6,2.4),b0-rand(1.6,2.4)];z.sp=0;}
     z.sp-=rdt;while(z.sp<=0){z.sp+=1/18;const rr=Math.sqrt(Math.random())*z.r*.85,ra=rand(0,TAU),az=pick(z.vol)+rand(-.35,.35),el=rand(.8,1.2);
       A.push({x:z.x+Math.cos(ra)*rr,z:z.y+Math.sin(ra)*rr,dx:Math.cos(az)*Math.cos(el),dy:-Math.sin(el),dz:Math.sin(az)*Math.cos(el),t:0,dur:rand(.26,.38),L:rand(260,330)});}}
   const ag=arrowGeos(),wood=[.79,.64,.42],steel=[.9,.93,.97],fl=rgb(g.c.color),Z=[0,0,0];
   for(let i=A.length-1;i>=0;i--){const a=A[i];a.t+=rdt;if(a.t>a.dur+.75){A.splice(i,1);continue;}
+    if(a.bow){const k=Math.min(1,a.t/a.dur),S0=a.S,T=a.T,arc=4*a.h*k*(1-k),x=S0[0]+(T[0]-S0[0])*k,y=Math.max(0,S0[1]+(T[1]-S0[1])*k+arc),zz=S0[2]+(T[2]-S0[2])*k;
+      const vx=T[0]-S0[0],vy=T[1]-S0[1]+4*a.h*(1-2*k),vz=T[2]-S0[2],ry=-Math.atan2(vz,vx),rz=Math.atan2(vy,Math.hypot(vx,vz));
+      const sink=a.t>a.dur?Math.min(6,(a.t-a.dur)*30):0,ux=Math.cos(rz)*Math.cos(-ry),uz=Math.cos(rz)*Math.sin(-ry),uy=Math.sin(rz);
+      const M=trs(x+ux*sink,y+uy*sink+(a.t>a.dur?0:2),zz+uz*sink,0,ry,rz,1.8,1.8,1.8);
+      lit(ag.shaft,M,wood,Z,1);lit(ag.head,M,steel,[.05,.05,.06],1);lit(ag.fl,M,fl,fl.map(v=>v*.25),1);
+      if(a.t<a.dur){const l=Math.hypot(vx,vy,vz)||1;spr(x-vx/l*30,y-vy/l*30,zz-vz/l*30,9,9,g.c.color,.5);spr(x-vx/l*52,y-vy/l*52,zz-vz/l*52,6,6,g.c.color,.25);}
+      else{const q=a.t-a.dur;if(q<.18){spr(T[0],5,T[2],34*(1-q/.18)+8,34*(1-q/.18)+8,'#d9c9a0',.7*(1-q/.18));decal(G.thin,T[0],T[2],8+q*60,8+q*60,0,'#d9c9a0',.5*(1-q/.18),.8);}
+        decal(G.disc,T[0]+3,T[2]+2,4,4,0,'#000000',.35,.3);}
+      continue;}
     const k=Math.min(1,a.t/a.dur),back=a.L*(1-k),sink=a.t>a.dur?Math.min(6,(a.t-a.dur)*30):0;
     const x=a.x-a.dx*(back-sink),y=-a.dy*(back-sink)+(a.t>a.dur?0:2),zz=a.z-a.dz*(back-sink);
     const ry=-Math.atan2(a.dz,a.dx),rz=Math.atan2(a.dy,Math.hypot(a.dx,a.dz)),M=trs(x,y,zz,0,ry,rz,1.8,1.8,1.8);
@@ -1865,9 +1881,10 @@ function render3D(){
   if(!p.dead){
     const mv=Math.hypot(p.x-E.px,p.y-E.py)/Math.max(rdt,1e-3);E.px=p.x;E.py=p.y;
     const moving=clamp(mv/120,0,1);E.walk+=rdt*Math.min(mv,400)*.09;
-    const sk2=p.slamT>0?1-p.slamT/.3:0,lift=(p.leap>0?Math.sin((1-p.leap/.45)*Math.PI)*34:0)+(p.slamT>0?(sk2<.55?Math.sin(sk2/.55*Math.PI/2)*20:20*(1-(sk2-.55)/.45)):0);
+    const skyT=p.buffs.sky>0?(p.skyDur||3.35)-p.buffs.sky:-1,skyH=skyT<0?0:(skyT<.3?Math.sin(skyT/.3*Math.PI/2):p.buffs.sky<.3?Math.sin(p.buffs.sky/.3*Math.PI/2):1)*(80+Math.sin(t*3)*4);E.skyH=skyH;
+    const sk2=p.slamT>0?1-p.slamT/.3:0,lift=skyH+(p.leap>0?Math.sin((1-p.leap/.45)*Math.PI)*34:0)+(p.slamT>0?(sk2<.55?Math.sin(sk2/.55*Math.PI/2)*20:20*(1-(sk2-.55)/.45)):0);
     Hh.root.x=p.x;Hh.root.y=lift;Hh.root.z=p.y;Hh.root.sx=Hh.root.sy=Hh.root.sz=1.22;
-    let want=p.face;if(p.buffs.anchor){}else if(p.dash)want=Math.atan2(p.dash.vy,p.dash.vx);else if(moving>.3&&!(p.swingT>0)&&(p.mvx||p.mvy))want=Math.atan2(p.mvy,p.mvx);
+    let want=p.face;if(p.buffs.sky>0&&!b.dead)want=Math.atan2(b.y-p.y,b.x-p.x);else if(p.buffs.anchor){}else if(p.dash)want=Math.atan2(p.dash.vy,p.dash.vx);else if(moving>.3&&!(p.swingT>0)&&(p.mvx||p.mvy))want=Math.atan2(p.mvy,p.mvx);
     E.face+=Math.atan2(Math.sin(want-E.face),Math.cos(want-E.face))*Math.min(1,rdt*14);Hh.root.ry=-E.face;
     const sw=Math.sin(E.walk)*moving;Hh.legL.rz=sw*.7;Hh.legR.rz=-sw*.7;Hh.body.y=Math.abs(Math.sin(E.walk))*2.2*moving;Hh.body.ry=p.buffs.whirl?t*22:0;Hh.armR.ry=0;
     poseHero(Hh,p);
@@ -1912,6 +1929,9 @@ function render3D(){
     Hh.shield.hidden=!(p.shield>0);Hh.shield.a=.16+.07*Math.sin(t*8);
     if(g.key==='brawler'&&moving<.2&&!(p.comboT>0)&&!(p.slamT>0)&&!p.dash&&!(p.swingT>0))Hh.body.y+=Math.abs(Math.sin(t*7))*1.6;
     const lsOn=p.buffs.lifesteal>0,frOn=g.key==='brawler'&&(g.fury||0)>=100;
+    if(p.buffs.sky>0){const tk=Math.min(1,((p.skyDur||3.35)-p.buffs.sky)/.25,p.buffs.sky/.25);
+      Hh.legL.rz=.95*tk;Hh.legR.rz=.35*tk;Hh.body.rz=-.32*tk;Hh.armR.rz=1.35+.55*tk;Hh.armL.rz=1.45+.6*tk;Hh.armR.x=-Math.max(0,Math.sin(t*18))*4*tk;
+      decal(G.thin,p.x,p.y,20+6*Math.sin(t*6),20+6*Math.sin(t*6),t*2,g.c.color,.35,1);}
     drawNode(Hh.root,E.I,p.hurt>0?[.55,.06,.06]:(p.iframe>0&&!p.leap?[.2,.2,.26]:lsOn?[.3+.14*Math.sin(t*9),.02,.05]:frOn?[.3+.1*Math.sin(t*12),.12,.02]:null));
     if(lsOn){spr(p.x,24,p.y,74,74,'#ff1a3a',.22+.08*Math.sin(t*8));if(Math.random()<.35)ep({x:p.x+rand(-14,14),y:rand(8,40),z:p.y+rand(-14,14),vy:rand(20,50),dur:.8,s:8,c:'#ff2a4a',a:.8});}
     if(frOn){const Fv=[Math.cos(E.face),Math.sin(E.face)],Sv=[-Fv[1],Fv[0]];for(const sd of[-1,1]){const qx=p.x+Fv[0]*16+Sv[0]*sd*12,qz=p.y+Fv[1]*16+Sv[1]*sd*12;spr(qx,36+lift,qz,40,40,'#ff7a1f',.9);spr(qx,36+lift,qz,16,16,'#ffe7a0',.9);
