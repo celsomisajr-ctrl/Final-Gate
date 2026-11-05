@@ -885,7 +885,7 @@ const POWERS={
   thorns:{name:'Spiked Hide',kind:'passive',desc:'Reflects 3% of the damage you deal back at you.'},
   barrier:{name:'Rune Barrier',kind:'passive',desc:'Every 14 seconds it gains a shield worth 6% of its health.'},
   revive:{name:'Second Wind',kind:'passive',desc:'The first time it dies, it rises again with 35% health.'},
-  regen:{name:'Undying Flesh',kind:'passive',desc:'Regenerates 0.35% of its max health every second.'},
+  regen:{name:'Undying Flesh',kind:'passive',desc:'Regenerates 0.15% of its max health every second.'},
   haste:{name:'Quickened',kind:'passive',desc:'Its powers recharge 30% faster and it acts more often.'},
 };
 const ELEMENTS=[
@@ -1086,7 +1086,7 @@ function updateBoss(dt){
   const g=game,p=g.p,b=g.b;if(b.dead)return;
   const hasP=k=>g.boss.powers.includes(k);
   b.flash=Math.max(0,b.flash-dt);b.suppT=Math.max(0,(b.suppT||0)-dt);b.vulnT=Math.max(0,b.vulnT-dt);b.slowT=Math.max(0,b.slowT-dt);b.spin+=dt*(b.enraged?1.6:0.6);
-  if(hasP('regen')&&b.hp<b.maxHp){b.hp=Math.min(b.maxHp,b.hp+b.maxHp*0.0035*dt);b.regenT+=dt;if(b.regenT>8)reveal('regen');}
+  if(hasP('regen')&&b.hp<b.maxHp){b.hp=Math.min(b.maxHp,b.hp+b.maxHp*0.0015*dt);b.regenT+=dt;if(b.regenT>8)reveal('regen');}
   if(hasP('barrier')){b.barrierT-=dt;if(b.barrierT<=0){b.barrierT=14;b.shield=b.maxHp*0.06;SFX.play('shield');reveal('barrier');fx({type:'ring',x:b.x,y:b.y,r0:b.r*2,r1:b.r+8,color:'#9fd0ff',dur:0.5,w:5});}}
   if(hasP('enrage')&&!b.enraged&&b.hp<b.maxHp*0.5){b.enraged=true;reveal('enrage');shake(8);burst(b.x,b.y,'#ff4f6a',40,300);}
   if(hasP('haste')&&g.t>22)reveal('haste');
