@@ -820,7 +820,7 @@ const SKILLS={
     cast(){const b=game.b,p=game.p;SFX.play('arrow');(game.skyArrows||(game.skyArrows=[])).push({x:b.x,y:b.y,t:0,fall:.55,stay:.9,dmg:dmg(game.d,70,1.6,0),hit:false,ox:p.x,oy:p.y});}},
   tumble:{name:'Tumble',cost:15,cd:7,desc:()=>`Roll a short way (away from the boss unless you're moving). Your next 2 basic attacks deal 50% more and always crit.`,
     cast(){startDash(aim(true),170,0.26);game.p.dash.roll=true;game.p.empower=2;}},
-  rain:{name:'Arrow Rain',cost:35,cd:11,range:460,desc:d=>`Leap into the air and loose a volley of arrows on the boss's area for 3 seconds, ${dmg(d,12,0.34,0)} damage every 0.3s. You take 50% less damage from the boss while airborne, but can't move until you land.`,
+  rain:{name:'Arrow Rain',cost:35,cd:11,range:460,desc:d=>`Leap into the air and fire a volley of arrows straight down onto the boss for 3 seconds, ${dmg(d,12,0.34,0)} damage every 0.3s. The volley follows the boss and slows it by 40%. You take 50% less damage from the boss while airborne, but can't move until you land.`,
     cast(){const b=game.b,p=game.p;p.buffs.sky=3.35;p.skyDur=3.35;p.dash=null;zone({x:b.x,y:b.y,r:115,delay:0.3,ticks:10,interval:0.3,dmg:dmg(game.d,12,0.34,0),color:'#9be15d',rain:true,fromBow:true});}},
   focus:{name:"Hunter's Focus",cost:30,cd:15,desc:()=>`Attack 60% faster for 5 seconds.`,
     cast(){const p=game.p;p.buffs.haste=5;p.hasteMul=1.6;}},
@@ -1163,6 +1163,8 @@ function updateZones(dt){
   const g=game,b=g.b;
   for(const z of g.zones){
     z.t+=dt;
+    if(z.fromBow&&z.done<z.ticks&&!b.dead){const k=Math.min(1,dt*6);z.x+=(b.x-z.x)*k;z.y+=(b.y-z.y)*k;
+      if(z.t>=z.delay&&dist(z,b)<z.r+b.r)b.slowT=Math.max(b.slowT,.3);}
     while(z.done<z.ticks&&z.t>=z.next){
       z.done++;z.next+=z.interval;if(z.done>=z.ticks)z.endT=z.t;
       if(z.bolt){SFX.play('bolt');fx({type:'bolt',x:z.x,y:z.y,color:'#fff3a0',dur:0.3});shake(4);}
@@ -1857,7 +1859,7 @@ function rainArrows(g,rdt){
     if(z.fromBow&&air){
       const f=E.face,cf=Math.cos(f),sf=Math.sin(f),S2=1.22,lean=.32,bx=p.x+(11*cf+8*sf)*S2,bz=p.y+(11*sf-8*cf)*S2,by=(E.skyH||0)+27*S2+11*Math.sin(lean);
       z.sp=(z.sp||0)-rdt;while(z.sp<=0){z.sp+=1/18;const rr=Math.sqrt(Math.random())*z.r*.85,ra=rand(0,TAU),T=[z.x+Math.cos(ra)*rr,0,z.y+Math.sin(ra)*rr];
-        const S0=[bx,by,bz],D=Math.hypot(T[0]-S0[0],T[2]-S0[2]);A.push({bow:true,S:S0,T,h:60+D*.22,t:0,dur:.42+D/1400});
+        const S0=[bx,by,bz],D=Math.hypot(T[0]-S0[0],T[2]-S0[2]);A.push({bow:true,S:S0,T,h:0,t:0,dur:.12+Math.hypot(D,S0[1])/1100});
         spr(bx,by,bz,22,22,g.c.color,.8);}
       continue;}
     if(!z.vol){const b0=rand(0,TAU);z.vol=[b0,b0+rand(1.6,2.4),b0-rand(1.6,2.4)];z.sp=0;}
