@@ -807,7 +807,7 @@ const SKILLS={
 
   bolt:{name:'Spirit Bolt',cost:20,cd:4,ownSfx:true,desc:d=>`Open a magic circle and fire a huge spirit bolt from it for ${dmg(d,40,0,1.15)} damage.`,
     cast(){const g=game;SFX.play('sbolt');(g.mc||(g.mc=[])).push({t:0,dur:.7,fire:.3,fired:false});later(.3,()=>{const g2=game,p=g2.p,b=g2.b,t2=dirTo(p,b);shoot({x:p.x+t2.x*40,y:p.y+t2.y*40,vx:t2.x*520,vy:t2.y*520,dmg:dmg(g2.d,40,0,1.15),r:22,kind:'spirit',color:'#62f0dc',big:true,life:2});});}},
-  totem:{name:'Healing Well',cost:40,cd:16,desc:d=>`Open a healing well at your feet. While you stand in it you restore ${Math.round(d.maxHp*0.03+d.power*0.2)} health per second for 5 seconds.`,
+  totem:{name:'Healing Well',cost:40,cd:16,desc:d=>`Open a healing well at your feet. While you stand in it you restore 20 health per second for 5 seconds.`,
     cast(){const p=game.p;SFX.play('totem');game.totems.push({x:p.x,y:p.y,t:5,r:140});}},
   thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Charge your staff and hurl a bolt of lightning into the boss for ${dmg(d,80,0,2.2)} damage.`,
     cast(){const p=game.p;p.charge=.28;p.castT2=.5;later(.28,()=>{const g=game,b=g.b;if(b.dead)return;SFX.play('shock');shake(5);hitBoss(dmg(g.d,80,0,2.2),{canCrit:true});burst(b.x,b.y,'#fff3a0',18,260);(g.sbolts||(g.sbolts=[])).push({t:0,dur:.32});});}},
@@ -1028,7 +1028,7 @@ function update(dt){
   if(g.sbolts&&g.sbolts.length){for(const q of g.sbolts)q.t+=dt;g.sbolts=g.sbolts.filter(q=>q.t<q.dur);}
   if(g.storm){g.storm.t+=dt;g.storm.pulse=Math.max(0,g.storm.pulse-dt*4);if(g.storm.t>g.storm.dur||g.b.dead){if(g.b.dead)SFX.stop('storm');g.storm=null;}}
   p.charge=Math.max(0,(p.charge||0)-dt);
-  for(const t of g.totems){t.t-=dt;if(!g.over&&dist(t,p)<t.r)healPlayer((g.d.maxHp*0.03+g.d.power*0.2)*dt);}
+  for(const t of g.totems){t.t-=dt;if(!g.over&&dist(t,p)<t.r)healPlayer(20*dt);}
   g.totems=g.totems.filter(t=>t.t>0);
   g.thornT-=dt;
   if(g.thornT<=0){g.thornT=0.6;if(g.thornAcc>=1&&!g.over){reveal('thorns');hurtPlayer(g.thornAcc,{raw:true,pierce:true,reflect:true});g.thornAcc=0;}if(p.healAcc>=1){text(p.x,p.y-30,'+'+Math.round(p.healAcc),'#6fe3a6',14);p.healAcc=0;}}
