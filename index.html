@@ -754,7 +754,7 @@ const STATS=[
 ];
 const CLASSES={
   swordsman:{name:'Swordsman',role:'Melee duelist',color:'#f2b64b',blurb:'Closes in fast, guards hard and cuts deep.',base:{str:3,agi:2,int:0,vit:3,spi:1},hp:540,atk:24,aps:1.15,range:48,ranged:false,meleeMul:1.3,skills:['dash','whirl','guard','rising'],ult:'judgement',suggest:{str:4,agi:2,int:0,vit:3,spi:1}},
-  shaman:{name:'Shaman',role:'Spirit caster',color:'#3fd6c4',blurb:'Curses, heals and calls lightning down from range.',base:{str:0,agi:1,int:4,vit:2,spi:3},hp:480,atk:18,aps:1.0,range:290,ranged:true,proj:{speed:460,r:8,kind:'spirit'},skills:['bolt','totem','thunder','hex'],ult:'storm',suggest:{str:0,agi:0,int:5,vit:2,spi:3}},
+  shaman:{name:'Shaman',role:'Spirit caster',color:'#3fd6c4',blurb:'Curses, heals and calls lightning down from range.',base:{str:0,agi:1,int:4,vit:2,spi:3},hp:480,atk:18,aps:1.0,range:270,ranged:true,proj:{speed:460,r:8,kind:'spirit'},skills:['bolt','totem','thunder','hex'],ult:'storm',suggest:{str:0,agi:0,int:5,vit:2,spi:3}},
   archer:{name:'Archer',role:'Long-range marksman',color:'#9be15d',blurb:'Outranges everything and rewards clean footwork.',base:{str:2,agi:4,int:1,vit:1,spi:1},hp:450,atk:22,aps:1.15,range:320,ranged:true,proj:{speed:760,r:5,kind:'arrow'},skills:['pierce','tumble','rain','focus'],ult:'phoenix',suggest:{str:3,agi:4,int:0,vit:2,spi:1}},
   gunner:{name:'Gunner',role:'Rapid-fire skirmisher',color:'#ff8a3d',blurb:'Fast trigger, explosive tricks, likes it close.',base:{str:3,agi:3,int:1,vit:1,spi:1},hp:470,atk:14,aps:1.5,range:260,ranged:true,proj:{speed:860,r:4,kind:'bullet'},skills:['buck','grenade','overclock','roll'],ult:'bullet',suggest:{str:3,agi:4,int:1,vit:2,spi:0}},
   brawler:{name:'Brawler',role:'Melee bruiser',color:'#ff6f9a',blurb:'Soaks hits, stuns often and heals by hitting back.',base:{str:4,agi:2,int:0,vit:3,spi:1},hp:490,atk:22,aps:1.25,range:44,ranged:false,meleeMul:1.1,skills:['charge','slam','bloodlust','combo'],ult:'quake',suggest:{str:4,agi:2,int:0,vit:4,spi:0}},
@@ -809,12 +809,12 @@ const SKILLS={
     cast(){const g=game;SFX.play('sbolt');(g.mc||(g.mc=[])).push({t:0,dur:.7,fire:.3,fired:false});later(.3,()=>{const g2=game,p=g2.p,b=g2.b,t2=dirTo(p,b);shoot({x:p.x+t2.x*40,y:p.y+t2.y*40,vx:t2.x*520,vy:t2.y*520,dmg:dmg(g2.d,40,0,1.15),r:22,kind:'spirit',color:'#62f0dc',big:true,life:2});});}},
   totem:{name:'Healing Well',cost:40,cd:16,desc:d=>`Open a healing well at your feet. While you stand in it you restore 20 health per second for 5 seconds.`,
     cast(){const p=game.p;SFX.play('totem');game.totems.push({x:p.x,y:p.y,t:5,r:140});}},
-  thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Charge your staff and hurl a bolt of lightning into the boss for ${dmg(d,80,0,2.2)} damage.`,
-    cast(){const p=game.p;p.charge=.28;p.castT2=.5;later(.28,()=>{const g=game,b=g.b;if(b.dead)return;SFX.play('shock');shake(5);hitBoss(dmg(g.d,80,0,2.2),{canCrit:true});burst(b.x,b.y,'#fff3a0',18,260);(g.sbolts||(g.sbolts=[])).push({t:0,dur:.32});});}},
-  hex:{name:'Hex',cost:30,cd:12,range:420,desc:()=>`Curse the boss for 4 seconds. It takes 20% more damage from everything and moves 40% slower.`,
-    cast(){const b=game.b;SFX.play('hex');b.vulnT=4;b.slowT=4;text(b.x,b.y-b.r-26,'Hexed','#c99bff',14);burst(b.x,b.y,'#c99bff',16,140);}},
-  storm:{name:'Ancestral Storm',ult:true,cost:70,cd:40,desc:d=>`Summon a storm that chains the boss to the sky with lightning for 4 seconds, striking 8 times for ${dmg(d,30,0,0.95)} damage each.`,
-    cast(){const g=game;g.storm={t:0,dur:4.1,pulse:0};SFX.play('storm');for(let k=0;k<8;k++)later(k*0.5,()=>{const b=game.b;if(b.dead)return;if(game.storm)game.storm.pulse=1;burst(b.x,b.y,'#bff6ff',10,200);hitBoss(dmg(game.d,30,0,0.95),{canCrit:true});shake(2);});}},
+  thunder:{name:'Thunder Call',cost:30,cd:8,range:420,desc:d=>`Charge your staff and hurl a bolt of lightning into the boss for ${dmg(d,80,0,1.95)} damage.`,
+    cast(){const p=game.p;p.charge=.28;p.castT2=.5;later(.28,()=>{const g=game,b=g.b;if(b.dead)return;SFX.play('shock');shake(5);hitBoss(dmg(g.d,80,0,1.95),{canCrit:true});burst(b.x,b.y,'#fff3a0',18,260);(g.sbolts||(g.sbolts=[])).push({t:0,dur:.32});});}},
+  hex:{name:'Hex',cost:30,cd:12,range:420,desc:()=>`Curse the boss for 4 seconds. It takes 20% more damage from everything, and moves 40% slower for the first 2.5 seconds.`,
+    cast(){const b=game.b;SFX.play('hex');b.vulnT=4;b.slowT=2.5;text(b.x,b.y-b.r-26,'Hexed','#c99bff',14);burst(b.x,b.y,'#c99bff',16,140);}},
+  storm:{name:'Ancestral Storm',ult:true,cost:70,cd:40,desc:d=>`Summon a storm that chains the boss to the sky with lightning for 4 seconds, striking 8 times for ${dmg(d,30,0,0.85)} damage each.`,
+    cast(){const g=game;g.storm={t:0,dur:4.1,pulse:0};SFX.play('storm');for(let k=0;k<8;k++)later(k*0.5,()=>{const b=game.b;if(b.dead)return;if(game.storm)game.storm.pulse=1;burst(b.x,b.y,'#bff6ff',10,200);hitBoss(dmg(game.d,30,0,0.85),{canCrit:true});shake(2);});}},
 
   pierce:{name:'Piercing Arrow',cost:20,cd:5,desc:d=>`Mark the boss with a target, then a heavy arrow plunges from the sky onto it for ${dmg(d,70,1.6,0)} damage.`,
     cast(){const b=game.b,p=game.p;SFX.play('arrow');(game.skyArrows||(game.skyArrows=[])).push({x:b.x,y:b.y,t:0,fall:.55,stay:.9,dmg:dmg(game.d,70,1.6,0),hit:false,ox:p.x,oy:p.y});}},
