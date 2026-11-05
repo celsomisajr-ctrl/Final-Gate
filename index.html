@@ -2217,7 +2217,7 @@ function render3D(){
           beam(A[0],A[1],10,'#3c4f9a',a*u*.55);beam(A[1],B[1],34,'#7fe0ff',a*u*.4);beam(A[1],B[1],8,'#e6fbff',a*u*.9);
           const m1=[(A[0][0]+A[1][0])/2,(A[0][1]+A[1][1])/2,(A[0][2]+A[1][2])/2],m2=[(B[0][0]+B[1][0])/2,(B[0][1]+B[1][1])/2,(B[0][2]+B[1][2])/2];beam(m1,m2,22,'#9fe8ff',a*u*.25);}
         /* the greatsword: an oversized blade drawn along the swing, with a soft spirit glow */
-        beam(hand,tip,60,'#7fe0ff',.14*a);drawGreatsword(hand,dir,reach,a,Math.PI/2);
+        beam(hand,tip,60,'#7fe0ff',.14*a);drawGreatsword(hand,dir,reach,a,Math.PI/4);
         spr(tip[0],tip[1],tip[2],34,34,'#ffffff',.85*a);spr(hand[0],hand[1],hand[2],26,26,'#bff4ff',.7*a);
         /* its shadow on the floor */
         const gx=(hand[0]+tip[0])/2,gz=(hand[2]+tip[2])/2,gL=Math.hypot(tip[0]-hand[0],tip[2]-hand[2]);if(gL>4)decal(E.G.plane,gx+SHX*20,gz+SHZ*20,gL,9,-Math.atan2(tip[2]-hand[2],tip[0]-hand[0]),'#05030a',.45*a,.35);
