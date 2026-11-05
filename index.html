@@ -1603,7 +1603,7 @@ function totemFX3D(g,tt,t){
   for(let i=0;i<12;i++){const a=t*.6+i*TAU/12,a2=a+TAU/12*5;const p1=[tt.x+Math.cos(a)*tt.r*.96,2,tt.y+Math.sin(a)*tt.r*.96],p2=[tt.x+Math.cos(a2)*tt.r*.96,2,tt.y+Math.sin(a2)*tt.r*.96];beam(p1,p2,1.6,C,.18*fade);}
   /* threads to the hero while healing */
   if(inR){const hand=[p.x,26,p.y];
-    for(let i=0;i<3;i++){const pts=thread3(orb,hand,36+i*10,14,t*3+i*2.1,14,2.2,i===1?'#d8fff8':C,.85);
+    for(let i=0;i<3;i++){const pts=smokeThread3(orb,hand,36+i*10,14,t*3+i*2.1,14,i===1?'#9ffff0':C,.85,t,i*3.1+7);
       for(let j=0;j<2;j++){const u=((t*1.2+i*.33+j*.5)%1),k=Math.min(pts.length-1,Math.floor(u*(pts.length-1))),q=pts[k];spr(q[0],q[1],q[2],12,12,'#d8fff8',.95);}}
     decal(G.thin,p.x,p.y,22,22,-t*3,C,.7,1.2,true);
     if(Math.random()<.3)ep({x:p.x+rand(-12,12),y:10,z:p.y+rand(-12,12),vy:rand(30,60),dur:.9,s:9,c:'#9cffc8',a:.9});}
