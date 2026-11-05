@@ -6,5 +6,7 @@
   "name": "final-gate-turn",
   "main": "turn-worker.js",
   "compatibility_date": "2025-06-01",
-  "workers_dev": true
+  "workers_dev": true,
+  // Keep variables added in the dashboard when GitHub redeploys
+  "keep_vars": true
 }
