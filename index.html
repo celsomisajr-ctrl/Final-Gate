@@ -2443,7 +2443,7 @@ const NET=(()=>{
      dedicated relay (TURN). To add one, fill RELAY with your provider's urls/username/credential. */
   const RELAY=null; // a fixed TURN server, e.g. {urls:['turn:…:3478'],username:'…',credential:'…'}
   // Cloudflare Worker that returns short-lived Cloudflare TURN credentials (see cloudflare/turn-worker.js).
-  const RELAY_URL='';
+  const RELAY_URL='https://final-gate-turn.celso-misa-jr.workers.dev';
   const ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'},
     {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
   let relayCache=null;
