@@ -1608,20 +1608,23 @@ function totemFX3D(g,tt,t){
     decal(G.thin,p.x,p.y,22,22,-t*3,C,.7,1.2,true);
     if(Math.random()<.3)ep({x:p.x+rand(-12,12),y:10,z:p.y+rand(-12,12),vy:rand(30,60),dur:.9,s:9,c:'#9cffc8',a:.9});}
 }
-/* a thread of smoke along the same gentle wavy path as thread3: a faint wide plume, a soft body,
-   and two thin wisps that drift slightly apart and back, with haze and a few rising puffs */
-function smokeThread3(a,b,lift,wob,ph,n,c,al,t,seed){const dx=b[0]-a[0],dz=b[2]-a[2],L=Math.hypot(dx,dz)||1,sx=-dz/L,sz=dx/L;const pts=[];
-  for(let i=0;i<=n;i++){const u=i/n,arc=4*u*(1-u),wv=Math.sin(u*Math.PI)*Math.sin(ph+u*6)*wob;
-    pts.push([a[0]+dx*u+sx*wv,a[1]+(b[1]-a[1])*u+lift*arc+Math.cos(ph*1.3+u*5)*wob*.35*arc,a[2]+dz*u+sz*wv]);}
-  for(let k=0;k<2;k++){let prev=null;const sg=k?1:-1;
-    for(let i=0;i<=n;i++){const u=i/n,sp=Math.sin(u*Math.PI)*(2.2+1.6*Math.sin(t*1.9+u*7+seed+k)),P=pts[i];
-      const q=[P[0]+sx*sp*sg,P[1]+Math.sin(t*2.4+u*9+seed*2+k*1.7)*1.8*Math.sin(u*Math.PI),P[2]+sz*sp*sg];
-      if(prev)beam(prev,q,1.3,c,al*(.55+.25*Math.sin(t*6+i+k)));prev=q;}}
-  for(let i=1;i<=n;i++){const A=pts[i-1],B=pts[i],u=i/n,br=.8+.2*Math.sin(t*3+u*8+seed);
-    beam(A,B,6+Math.sin(u*Math.PI)*5,c,al*.22*br);beam(A,B,16+Math.sin(u*Math.PI)*10,c,al*.06*br);
-    if(i%2===0)spr(B[0],B[1],B[2],12+6*br,12+6*br,c,al*.09);}
-  if(Math.random()<.18*al){const P=pts[1+Math.floor(Math.random()*(n-1))];ep({x:P[0],y:P[1],z:P[2],vx:rand(-6,6),vy:rand(8,20),vz:rand(-6,6),dur:rand(.6,1),s:rand(7,11),grow:18,c,a:.25*al});}
+/* a thread of volumetric smoke along the same gentle wavy path as thread3: many soft round puffs
+   (a darker normal-blended body for depth, a lighter additive top as if lit from above) drifting along
+   the thread toward the boss, swelling and thinning as they go */
+function smokeThread3(a,b,lift,wob,ph,n,c,al,t,seed){const dx=b[0]-a[0],dz=b[2]-a[2],L=Math.hypot(dx,dz)||1,sx=-dz/L,sz=dx/L;
+  const at=u=>{const arc=4*u*(1-u),wv=Math.sin(u*Math.PI)*Math.sin(ph+u*6)*wob;return[a[0]+dx*u+sx*wv,a[1]+(b[1]-a[1])*u+lift*arc+Math.cos(ph*1.3+u*5)*wob*.35*arc,a[2]+dz*u+sz*wv];};
+  const pts=[];for(let i=0;i<=n;i++)pts.push(at(i/n));
+  const dark=hexMix(c,'#1a0f2e',.5),M=Math.max(30,Math.round(L/5)),flow=t*.35;
+  for(let m=0;m<M;m++){const h=Math.sin((m+1)*12.9898+seed*78.233)*43758.5453,r1=h-Math.floor(h),r2=(h*1.7)%1,r3=(h*2.3)%1;
+    const u=((m+r1*.6)/M+flow)%1,env=Math.sin(u*Math.PI),P=at(u),life=(u*M)%1;
+    const jx=(r2-.5)*4.5*env+Math.sin(t*1.6+m)*1.5,jy=(r3-.5)*4*env+Math.cos(t*1.9+m*1.3)*1.5;
+    const q=[P[0]+sx*jx,P[1]+jy,P[2]+sz*jx],size=(8+11*env)*(.8+.4*r2)*(.88+.24*Math.sin(t*2+m));
+    sprN(q[0],q[1]-1.5,q[2],size*1.15,size*1.05,dark,al*(.42+.18*env));                       // body (shadow side)
+    spr(q[0],q[1]+size*.18,q[2],size*.8,size*.72,c,al*(.24+.12*env));                       // lit top
+    if(m%3===0)spr(q[0],q[1]+size*.25,q[2],size*.32,size*.3,'#f6ecff',al*.3*env);}       // bright core wisp
+  if(Math.random()<.22*al){const P=at(.15+Math.random()*.7);ep({x:P[0],y:P[1],z:P[2],vx:rand(-6,6),vy:rand(8,18),vz:rand(-6,6),dur:rand(.7,1.1),s:rand(8,12),grow:20,c:dark,a:.22*al,n:true});}
   return pts;}
+function hexMix(a,b,k){const A=rgb(a),B=rgb(b),h=v=>Math.round(Math.max(0,Math.min(1,v))*255).toString(16).padStart(2,'0');return '#'+[0,1,2].map(i=>h(A[i]+(B[i]-A[i])*k)).join('');}
 function hexFX3D(g,t,fl){
   const G=E.G,p=g.p,b=g.b,cols=['#c99bff','#ff8fd6','#e9d8ff','#b38cff'],fade=clamp(b.vulnT/.4,0,1);
   if(!p.dead){const hand=[p.x+Math.cos(E.face)*10,30,p.y+Math.sin(E.face)*10];
