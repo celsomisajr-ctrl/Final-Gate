@@ -1609,16 +1609,33 @@ function totemFX3D(g,tt,t){
     if(Math.random()<.3)ep({x:p.x+rand(-12,12),y:10,z:p.y+rand(-12,12),vy:rand(30,60),dur:.9,s:9,c:'#9cffc8',a:.9});}
 }
 function hexFX3D(g,t,fl){
-  const G=E.G,p=g.p,b=g.b,cols=['#c99bff','#ff8fd6','#e9d8ff','#b38cff'],fade=clamp(b.vulnT/.4,0,1);
-  if(!p.dead){const hand=[p.x+Math.cos(E.face)*10,30,p.y+Math.sin(E.face)*10];
-    for(let i=0;i<4;i++){const tgt=[b.x+Math.cos(i*1.7+t)*14,fl+(i-1.5)*9,b.y+Math.sin(i*1.7+t)*14];
-      const pts=thread3(hand,tgt,14+i*5,9+i*2,t*4+i*1.6,16,1.7,cols[i],.9*fade);
-      const u=(t*.9+i*.25)%1,q=pts[Math.min(pts.length-1,Math.floor(u*(pts.length-1)))];spr(q[0],q[1],q[2],9,9,'#ffe0ff',.9*fade);}
-    spr(hand[0],hand[1],hand[2],22,22,'#ff8fd6',.7*fade);}
-  for(let i=0;i<3;i++){const y=fl-22+i*22,r=b.r+4+Math.sin(t*3+i)*3;decal(G.thin,b.x,b.y,r,r,t*(i%2?-2.5:2.5),cols[i],.85*fade,y,true);
-    for(let k=0;k<4;k++){const a=t*(i%2?-2.5:2.5)+k*Math.PI/2;spr(b.x+Math.cos(a)*r,y,b.y+Math.sin(a)*r,8,8,'#ffe0ff',.9*fade);}}
-  for(let i=0;i<5;i++){const a=i*TAU/5+t*.7,a2=a+2.2;beam([b.x+Math.cos(a)*(b.r+4),fl-18,b.y+Math.sin(a)*(b.r+4)],[b.x+Math.cos(a2)*(b.r+4),fl+18,b.y+Math.sin(a2)*(b.r+4)],1.5,cols[i%4],.7*fade);}
-  decal(G.thin,b.x,b.y,b.r+20,b.r+20,t*2,'#c99bff',.6*fade,1.2,true);
+  /* Hex: a braided weave of thin smoke from the hero's hand to the boss, and smoke coiling around the boss */
+  const G=E.G,p=g.p,b=g.b,cols=['#c99bff','#ff8fd6','#b38cff','#e2b8ff'],fade=clamp(b.vulnT/.4,0,1);
+  if(!p.dead){const hand=[p.x+Math.cos(E.face)*10,30,p.y+Math.sin(E.face)*10],tgt=[b.x,fl,b.y];
+    let D=[tgt[0]-hand[0],tgt[1]-hand[1],tgt[2]-hand[2]];const L=Math.hypot(...D)||1;D=D.map(v=>v/L);
+    let S=[D[2],0,-D[0]];const sl=Math.hypot(S[0],S[2])||1;S=S.map(v=>v/sl);const U=[S[1]*D[2]-S[2]*D[1],S[2]*D[0]-S[0]*D[2],S[0]*D[1]-S[1]*D[0]];
+    const N=30,STR=4;
+    for(let k=0;k<STR;k++){let prev=null;
+      for(let n=0;n<=N;n++){const u=n/N,pinch=Math.sin(Math.PI*u),a=u*TAU*2.4-t*3.2+k*TAU/STR,r=(4+13*pinch)*(1+.18*Math.sin(t*2.3+u*9+k));
+        const wob=Math.sin(t*1.7+u*14+k*2)*3*pinch,c=[hand[0]+D[0]*L*u,hand[1]+D[1]*L*u+Math.sin(Math.PI*u)*16,hand[2]+D[2]*L*u];
+        const q=[c[0]+(S[0]*Math.cos(a)+U[0]*Math.sin(a))*r+U[0]*wob,c[1]+(S[1]*Math.cos(a)+U[1]*Math.sin(a))*r+U[1]*wob,c[2]+(S[2]*Math.cos(a)+U[2]*Math.sin(a))*r+U[2]*wob];
+        const front=.55+.45*Math.sin(a),flick=.75+.25*Math.sin(t*9+n*1.3+k);
+        if(prev){beam(prev,q,2+front*2.2,cols[k],.85*fade*front*flick);beam(prev,q,7+pinch*6,cols[k],.16*fade*flick);}           // thin smoke filament
+        spr(q[0],q[1],q[2],14+pinch*12,14+pinch*12,cols[k],.13*fade*flick);           // soft haze
+        if(n%3===0)spr(q[0],q[1],q[2],6,6,'#f6ecff',.55*fade*front);                  // glints
+        prev=q;}}
+    spr(hand[0],hand[1],hand[2],24,24,'#ff8fd6',.55*fade);
+    if(Math.random()<.45*fade){const u=Math.random(),c=[hand[0]+D[0]*L*u,hand[1]+D[1]*L*u+Math.sin(Math.PI*u)*16,hand[2]+D[2]*L*u];
+      ep({x:c[0]+rand(-6,6),y:c[1]+rand(-4,4),z:c[2]+rand(-6,6),vx:rand(-8,8),vy:rand(10,26),vz:rand(-8,8),dur:rand(.6,1),s:rand(9,14),grow:24,c:pick(cols),a:.32});}}
+  /* smoke coiling around the boss: three tilted, drifting wisps with fading tails */
+  for(let i=0;i<3;i++){const tilt=.35+i*.18,sp=(i%2?-1:1)*(1.8+i*.3),ph=i*TAU/3;let prev=null;
+    for(let n=0;n<22;n++){const a=t*sp+ph-n*.13*Math.sign(sp),rr=b.r+10+Math.sin(t*2+i+n*.3)*4,y=fl+Math.sin(a+ph)*b.r*tilt+(i-1)*8;
+      const q=[b.x+Math.cos(a)*rr,y,b.y+Math.sin(a)*rr],tail=1-n/22;
+      if(prev){beam(prev,q,2.6*tail+.8,cols[i],.85*fade*tail);beam(prev,q,9*tail+2,cols[i],.15*fade*tail);}
+      if(n%2===0)spr(q[0],q[1],q[2],16*tail+6,16*tail+6,cols[i],.18*fade*tail);
+      prev=q;}}
+  if(Math.random()<.35*fade)ep({x:b.x+rand(-b.r,b.r)*.8,y:fl+rand(-20,20),z:b.y+rand(-b.r,b.r)*.8,vx:rand(-6,6),vy:rand(14,30),vz:rand(-6,6),dur:rand(.8,1.3),s:rand(10,16),grow:26,c:pick(cols),a:.18});
+  decal(G.thin,b.x,b.y,b.r+20,b.r+20,t*2,'#c99bff',.35*fade,1.2,true);
 }
 function spirit3D(g,rdt){if(!g.spirit||!g.spirit.length)return;const fl=E.bfl||60;
   for(let i=g.spirit.length-1;i>=0;i--){const q=g.spirit[i];q.t+=rdt;if(q.t>.4){g.spirit.splice(i,1);continue;}const f=1-q.t/.4;
