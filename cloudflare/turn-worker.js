@@ -17,18 +17,27 @@ export default {
     };
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
     if (req.method !== 'GET') return new Response('Method not allowed', { status: 405, headers: cors });
+    const json = (o, status = 200) => new Response(JSON.stringify(o, null, 1), { status, headers: { ...cors, 'content-type': 'application/json', 'cache-control': 'no-store' } });
+    // Setup checks (never reveal the secret values themselves)
+    const id = (env.TURN_KEY_ID || '').trim(), token = (env.TURN_KEY_API_TOKEN || '').trim();
+    if (!id || !token) {
+      return json({ error: 'missing-secret', hint: 'Add both secrets in the Worker: Settings > Variables and Secrets', TURN_KEY_ID_set: !!id, TURN_KEY_API_TOKEN_set: !!token }, 500);
+    }
     const r = await fetch(
-      `https://rtc.live.cloudflare.com/v1/turn/keys/${env.TURN_KEY_ID}/credentials/generate-ice-servers`,
+      `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(id)}/credentials/generate-ice-servers`,
       {
         method: 'POST',
-        headers: { Authorization: `Bearer ${env.TURN_KEY_API_TOKEN}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ ttl: 14400 }), // 4 hours
       },
     );
     if (!r.ok) {
-      return new Response(JSON.stringify({ error: 'turn-unavailable', status: r.status }), {
-        status: 502, headers: { ...cors, 'content-type': 'application/json' },
-      });
+      let detail = '';
+      try { detail = (await r.text()).slice(0, 300); } catch (e) {}
+      const hint = r.status === 404 ? 'TURN_KEY_ID does not match a TURN key. Use the Turn Token ID from Realtime > TURN Server.'
+        : (r.status === 401 || r.status === 403) ? 'TURN_KEY_API_TOKEN is wrong or belongs to a different TURN key.'
+        : 'Cloudflare TURN returned an error.';
+      return json({ error: 'turn-unavailable', status: r.status, hint, idLength: id.length, idStart: id.slice(0, 4), tokenLength: token.length, cloudflare: detail }, 502);
     }
     const data = await r.json();
     return new Response(JSON.stringify(data), {
