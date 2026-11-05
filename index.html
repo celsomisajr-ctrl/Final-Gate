@@ -1789,7 +1789,7 @@ function buildScene3D(g){
   E.arrows=[];E.blood=[];E.pools=[];E.vp=[];E.spk=[];E.lb=[];E.scorch=[];E.scene=S;E.tx=W/2+(g.p.x-W/2)*.55;E.tz=H/2+(g.p.y-H/2)*.55;E.px=g.p.x;E.py=g.p.y;E.walk=0;E.face=g.p.face;E.bf=g.b.face;E.last=performance.now();E.fc=0;E.ft=16;
 }
 function gMerge(...gs){const g=GB();for(const x of gs)g.p.push(...x.p);return g;}
-const PA_LEN=2.1;
+const PA_LEN=1.58;
 const PA_TILT=.9;
 /* arrow axis: tip at (x,y,z), tail leaning PA_TILT sideways toward the archer's side, so the camera sees its full length */
 function paAxis(a){const dx=a.ox<a.x?-1:1,dz=.45,l=Math.hypot(dx,dz);return{ang:Math.atan2(dz/l,dx/l),ux:Math.sin(PA_TILT)*dx/l,uy:Math.cos(PA_TILT),uz:Math.sin(PA_TILT)*dz/l};}
