@@ -774,7 +774,7 @@ let game=null,raf=0,last=0,joy=null;
 const keys=new Set();
 function burst(x,y,color,n=10,spd=160,size=3,dur=0.5){if(!game||game.parts.length>700)return;for(let i=0;i<n;i++){const a=rand(0,TAU),s=rand(spd*0.3,spd);game.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,color,size:rand(size*0.6,size*1.4),t:0,dur:rand(dur*0.6,dur)});}}
 function fx(o){game.fx.push(Object.assign({t:0,dur:0.35},o));}
-function text(x,y,s,color='#ffffff',size=16){game.texts.push({x,y,s:String(s),color,size,t:0,dur:0.9});}
+function text(x,y,s,color='#ffffff',size=16){if(typeof s==='number')s=Math.round(s);else s=String(s).replace(/(-?\d+)\.\d+/g,(m,i)=>String(Math.round(+m)));game.texts.push({x,y,s:String(s),color,size,t:0,dur:0.9});}
 function later(t,fn){game.timers.push({t,fn});}
 function shake(v){game.shake=Math.max(game.shake,v);}
 function aim(away){const p=game.p;if(p.mvx||p.mvy){const l=Math.hypot(p.mvx,p.mvy);return{x:p.mvx/l,y:p.mvy/l};}const t=dirTo(p,game.b);return away?{x:-t.x,y:-t.y}:t;}
@@ -928,7 +928,7 @@ function hurtPlayer(amount,opt={}){
   if(!opt.raw)v*=b.dmgMul*(b.enraged?1.35:1)*(g.berserk?2:1);
   v*=1-g.d.dr;if(p.buffs.fortify)v*=0.6;if(p.buffs.anchor)v*=0.75;if(p.buffs.sky&&!opt.raw)v*=0.5;
   v=Math.max(1,Math.round(v));
-  if(p.shield>0){const a=Math.min(p.shield,v);p.shield-=a;v-=a;if(a>=1)text(p.x+14,p.y-32,'-'+Math.round(a),'#9fd0ff',13);if(p.shield<=0){p.shield=0;p.shieldT=0;if(g.key==='swordsman')SFX.stop('swGuard',.3);}}
+  if(p.shield>0){const a=Math.min(p.shield,v);p.shield-=a;v=Math.round(v-a);if(a>=1)text(p.x+14,p.y-32,'-'+Math.round(a),'#9fd0ff',13);if(p.shield<=0){p.shield=0;p.shieldT=0;if(g.key==='swordsman')SFX.stop('swGuard',.3);}}
   if(v<=0){SFX.play('shieldHit');return;}
   p.hp-=v;g.stats.taken+=v;p.hurt=0.18;if(!opt.reflect)addFury(v*.15);SFX.play(opt.quiet?'sizzle':'hurt');
   text(p.x+rand(-10,10),p.y-30,'-'+v,'#ff6b6b',opt.reflect?13:18);
