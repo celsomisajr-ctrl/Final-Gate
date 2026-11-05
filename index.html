@@ -2441,9 +2441,17 @@ const NET=(()=>{
   const say=(t,err)=>{const m=$('#co-msg');if(!m)return;m.textContent=t||'';m.classList.toggle('err',!!err);};
   /* ways for two devices to find each other: public STUN servers, PeerJS's free relay, and an optional
      dedicated relay (TURN). To add one, fill RELAY with your provider's urls/username/credential. */
-  const RELAY=null; // e.g. {urls:['turn:a.relay.metered.ca:80','turns:a.relay.metered.ca:443?transport=tcp'],username:'…',credential:'…'}
+  const RELAY=null; // a fixed TURN server, e.g. {urls:['turn:…:3478'],username:'…',credential:'…'}
+  // Cloudflare Worker that returns short-lived Cloudflare TURN credentials (see cloudflare/turn-worker.js).
+  const RELAY_URL='';
   const ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'},
     {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
+  let relayCache=null;
+  async function relayServers(){if(!RELAY_URL)return[];if(relayCache&&relayCache.until>Date.now())return relayCache.list;
+    try{const ac=new AbortController(),to=setTimeout(()=>ac.abort(),5000);const r=await fetch(RELAY_URL,{signal:ac.signal});clearTimeout(to);if(!r.ok)return[];
+      const d=await r.json(),list=(d.iceServers||[]).map(s=>Object.assign({},s,{urls:[].concat(s.urls).filter(u=>!/:53(\?|$)/.test(u))})).filter(s=>s.urls.length);
+      relayCache={list,until:Date.now()+3*3600e3};return list;}catch(e){return[];}}
+  async function peerOptsAsync(){const o=peerOpts();if(!qs.get('noice')){const extra=await relayServers();if(extra.length)o.config.iceServers=[...extra,...o.config.iceServers];}return o;}
   function peerOpts(){const o={debug:0,config:{iceServers:RELAY?[RELAY,...ICE]:ICE}};const ps=qs.get('peer');if(ps){const a=ps.split(':');o.host=a[0];o.port=+a[1]||9000;o.path='/';o.secure=false;}if(qs.get('noice'))o.config={iceServers:[]};return o;}
   let libP=null;
   function loadLib(){if(window.Peer)return Promise.resolve();return libP||(libP=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=window.FG_PEERJS||'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>{libP=null;rej(new Error('lib'));};document.head.appendChild(sc);}));}
@@ -2455,7 +2463,7 @@ const NET=(()=>{
     if(N.role)return;say('Opening a room…');
     try{await loadLib();}catch(e){say(OFFLINE_MSG,true);return;}
     const code=Array.from({length:5},()=>ALPH[(Math.random()*ALPH.length)|0]).join('');
-    const pr=new window.Peer(PRE+code,peerOpts());N.peer=pr;
+    const pr=new window.Peer(PRE+code,await peerOptsAsync());N.peer=pr;
     pr.on('open',id=>{N.role='host';N.myId=id;N.code=code;N.phase='lobby';N.players=[{id,name:'Player 1',cls:null,ready:false,host:true}];say('');roomUi();});
     pr.on('connection',conn=>{
       conn.on('open',()=>{
@@ -2471,7 +2479,7 @@ const NET=(()=>{
     if(code.length!==5){say('Enter the 5-character room code.',true);return;}
     say('Joining room '+code+'…');
     try{await loadLib();}catch(e){say(OFFLINE_MSG,true);return;}
-    const pr=new window.Peer(undefined,peerOpts());N.peer=pr;
+    const pr=new window.Peer(undefined,await peerOptsAsync());N.peer=pr;
     pr.on('open',id=>{N.myId=id;const c=pr.connect(PRE+code,{reliable:true});N.host=c;
       const to=setTimeout(()=>{if(!N.role){say('Found room '+code+" but couldn't connect to it. One of your networks is blocking direct connections. Try again, or have one of you switch networks (home Wi-Fi or a phone hotspot).",true);reset();}},20000);
       c.on('open',()=>{clearTimeout(to);N.role='guest';N.code=code;N.phase='lobby';say('');send({t:'hello'});roomUi();});
