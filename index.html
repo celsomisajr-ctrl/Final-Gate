@@ -814,7 +814,7 @@ const SKILLS={
     cast(){const b=game.b,p=game.p;SFX.play('arrow');(game.skyArrows||(game.skyArrows=[])).push({x:b.x,y:b.y,t:0,fall:.55,stay:.9,dmg:dmg(game.d,70,1.6,0),hit:false,ox:p.x,oy:p.y});}},
   tumble:{name:'Tumble',cost:15,cd:7,desc:()=>`Roll a short way (away from the boss unless you're moving). Your next 2 basic attacks deal 50% more and always crit.`,
     cast(){startDash(aim(true),170,0.26);game.p.dash.roll=true;game.p.empower=2;}},
-  rain:{name:'Arrow Rain',cost:35,cd:11,range:460,desc:d=>`Leap into the air and loose a volley of arrows on the boss's area for 3 seconds, ${dmg(d,12,0.34,0)} damage every 0.3s. You can't move until you land.`,
+  rain:{name:'Arrow Rain',cost:35,cd:11,range:460,desc:d=>`Leap into the air and loose a volley of arrows on the boss's area for 3 seconds, ${dmg(d,12,0.34,0)} damage every 0.3s. You take 50% less damage from the boss while airborne, but can't move until you land.`,
     cast(){const b=game.b,p=game.p;p.buffs.sky=3.35;p.skyDur=3.35;p.dash=null;zone({x:b.x,y:b.y,r:115,delay:0.3,ticks:10,interval:0.3,dmg:dmg(game.d,12,0.34,0),color:'#9be15d',rain:true,fromBow:true});}},
   focus:{name:"Hunter's Focus",cost:30,cd:15,desc:()=>`Attack 60% faster for 5 seconds.`,
     cast(){const p=game.p;p.buffs.haste=5;p.hasteMul=1.6;}},
@@ -926,7 +926,7 @@ function hurtPlayer(amount,opt={}){
   if(p.iframe>0&&!opt.pierce){if(!opt.quiet)SFX.play('dodge');if(!opt.quiet)text(p.x,p.y-28,'Dodged','#c7bfe6',13);return;}
   let v=amount;
   if(!opt.raw)v*=b.dmgMul*(b.enraged?1.35:1)*(g.berserk?2:1);
-  v*=1-g.d.dr;if(p.buffs.fortify)v*=0.6;if(p.buffs.anchor)v*=0.75;
+  v*=1-g.d.dr;if(p.buffs.fortify)v*=0.6;if(p.buffs.anchor)v*=0.75;if(p.buffs.sky&&!opt.raw)v*=0.5;
   v=Math.max(1,Math.round(v));
   if(p.shield>0){const a=Math.min(p.shield,v);p.shield-=a;v-=a;if(a>=1)text(p.x+14,p.y-32,'-'+Math.round(a),'#9fd0ff',13);if(p.shield<=0){p.shield=0;p.shieldT=0;if(g.key==='swordsman')SFX.stop('swGuard',.3);}}
   if(v<=0){SFX.play('shieldHit');return;}
