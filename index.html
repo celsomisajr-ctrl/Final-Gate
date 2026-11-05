@@ -68,10 +68,11 @@ p{margin:0}
 .btn.small{padding:10px 14px; font-size:12px}
 
 /* class screen */
-.hero{display:flex; flex-direction:column; gap:14px; padding-top:20px}
+.hero{display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; padding-top:20px}
+.hero>.logo{align-self:stretch}
 .title{font-family:var(--f-display); font-weight:900; font-size:clamp(64px,13vw,132px); line-height:.82; color:var(--gold); letter-spacing:.005em}
-.logo svg.fg-logo{display:block; width:min(100%,620px); height:auto; margin:-6px 0 -4px -10px}
-.logo{display:flex; align-items:center; gap:clamp(10px,2vw,22px); margin:0; flex-wrap:wrap}
+.logo svg.fg-logo{display:block; width:min(100%,620px); height:auto; margin:-6px auto -4px}
+.logo{display:flex; align-items:center; justify-content:center; gap:clamp(10px,2vw,22px); margin:0; flex-wrap:wrap}
 .logo-mark{width:clamp(84px,14vw,136px); flex:none; filter:drop-shadow(0 0 18px rgba(255,170,60,.35))}
 .logo-mark svg{display:block; width:100%; height:auto}
 .logo-word{font-family:var(--f-display); font-weight:900; font-size:clamp(60px,12vw,124px); line-height:.86; letter-spacing:.005em; padding-bottom:.06em;
@@ -220,7 +221,7 @@ kbd{font:600 12px var(--f-ui); padding:1px 6px; background:var(--panel-2); color
 .pause-btn .ico{width:14px; height:14px}
 body.ml .bb-right .auto-btn .lbl{display:none}
 body.ml .bb-right .auto-btn{padding:0 6px}
-.hero-tools{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.hero-tools{display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap}
 #s-class .auto-btn{--c:var(--gold)}
 .bar{position:relative; height:16px; background:var(--panel); overflow:hidden; box-shadow:inset 0 0 0 1px var(--line)}
 .bar.big{height:20px}
