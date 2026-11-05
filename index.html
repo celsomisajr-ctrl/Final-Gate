@@ -1910,15 +1910,16 @@ function leapStrike3D(g,p,b,Hh,lift,rdt,t){
       if(i%2===0){const gx=(A[1][0]+B[1][0])/2,gz=(A[1][2]+B[1][2])/2;decal(E.G.disc,gx+SHX*14,gz+SHZ*14,26,26,0,'#05030a',.28*w,.35);}}
     if(Math.random()<.8){const P=pts[Math.floor(rand(0,n))],u=rand(.4,1);ep({x:P[0][0]+(P[1][0]-P[0][0])*u,y:Math.max(4,P[0][1]+(P[1][1]-P[0][1])*u),z:P[0][2]+(P[1][2]-P[0][2])*u,vx:rand(-30,30),vy:rand(10,60),vz:rand(-30,30),dur:.6,s:rand(14,26),grow:20,c:'#2a1650',a:.35});}}
   /* the greatsword itself, with a violet glow while it falls */
-  if(a>.02){beam(hand,tip,56,'#a46bff',(s>0&&air?.3:.12)*a);drawGreatsword(hand,dir,reach,a);
+  if(a>.02){beam(hand,tip,56,'#a46bff',(s>0&&air?.3:.12)*a);drawGreatsword(hand,dir,reach,a,Math.PI/2);
     spr(tip[0],tip[1],tip[2],30,30,'#f4ecff',(s>0?.9:.45)*a);
     if(air&&s<=0&&Math.random()<.5){const u=rand(.3,1);ep({x:hand[0]+dir[0]*reach*u,y:Math.max(4,hand[1]+dir[1]*reach*u),z:hand[2]+dir[2]*reach*u,vx:rand(-20,20),vy:rand(10,50),vz:rand(-20,20),dur:.4,s:5,c:'#c9a6ff',a:.9});}
     const gx=(hand[0]+tip[0])/2,gz=(hand[2]+tip[2])/2,gL=Math.hypot(tip[0]-hand[0],tip[2]-hand[2]);if(gL>4)decal(E.G.plane,gx+SHX*20,gz+SHZ*20,gL,9,-Math.atan2(tip[2]-hand[2],tip[0]-hand[0]),'#05030a',.4*a,.35);}
 }
-function drawGreatsword(hand,dir,reach,a){if(a<=.02)return;
+function drawGreatsword(hand,dir,reach,a,tw){if(a<=.02)return;
   const n=Math.hypot(dir[0],dir[1],dir[2])||1,X=[dir[0]/n,dir[1]/n,dir[2]/n];
   let W=[X[2],0,-X[0]];let wl=Math.hypot(W[0],W[2]);if(wl<.05){W=[1,0,0];wl=1;}W=W.map(v=>v/wl);
-  const Z=[X[1]*W[2]-X[2]*W[1],X[2]*W[0]-X[0]*W[2],X[0]*W[1]-X[1]*W[0]],sx=reach/205,sw=.9+sx*.35;
+  let Z=[X[1]*W[2]-X[2]*W[1],X[2]*W[0]-X[0]*W[2],X[0]*W[1]-X[1]*W[0]];const sx=reach/205,sw=.9+sx*.35;
+  if(tw){const c=Math.cos(tw),s2=Math.sin(tw),W2=W.map((v,i)=>v*c+Z[i]*s2);Z=Z.map((v,i)=>v*c-W[i]*s2);W=W2;}
   const M=new Float32Array([X[0]*sx,X[1]*sx,X[2]*sx,0, W[0]*sw,W[1]*sw,W[2]*sw,0, Z[0]*sw,Z[1]*sw,Z[2]*sw,0, hand[0],hand[1],hand[2],1]);
   const H=new Float32Array([X[0]*sw,X[1]*sw,X[2]*sw,0, W[0]*sw,W[1]*sw,W[2]*sw,0, Z[0]*sw,Z[1]*sw,Z[2]*sw,0, hand[0],hand[1],hand[2],1]);
   const gs=greatswordGeos();
