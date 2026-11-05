@@ -29,6 +29,7 @@ All text in the SVGs is converted to outlines, so no font has to load. The wordm
 |---|---|
 | `svg/icons/*.svg`, `png/icons/*(@2x).png` | 43 UI icons on 96 px gold tiles: navigation, actions, system, status, stats, currency, skill and combat |
 | `svg/classes/*.svg`, `png/classes/*(@2x).png` | Hex badges for swordsman, shaman, archer, gunner and brawler |
+| `svg/skills/*.svg` | 25 skill silhouettes (64×64, `currentColor`, gold by default): one per hero skill and ultimate, named by skill id |
 | `svg/ui/*.svg`, `png/ui/*@2x.png` | START GAME, SETTINGS and BACK buttons, and heart, gem and coin pills |
 
 Icon names: achievements, agi, aoe, attack, coins, cooldown, defeat, defend, dodge, exit, fullscreen, gems, gift, guide, heal, heroes, home, info, int, key, leaderboard, locked, mute, new, pause, play, potion, ranged, retry, reward, settings, skill, skip, sound, spi, stamina, start, stats, str, unlock, victory, vit, window.
