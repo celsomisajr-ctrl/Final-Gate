@@ -2064,6 +2064,16 @@ function riseStrike3D(g,p,b,Hh,lift){const k=1-p.rise/.4,sm=x=>x*x*(3-2*x),cl=x=
   spr(tip[0],tip[1],tip[2],34,34,'#ffffff',.85*a);spr(hand[0],hand[1],hand[2],26,26,'#bff4ff',.7*a);
   const gx=(hand[0]+tip[0])/2,gz=(hand[2]+tip[2])/2,gL=Math.hypot(tip[0]-hand[0],tip[2]-hand[2]);if(gL>4)decal(E.G.plane,gx+SHX*20,gz+SHZ*20,gL,9,-Math.atan2(tip[2]-hand[2],tip[0]-hand[0]),'#05030a',.45*a,.35);
   if(s>0&&Math.random()<.7){const u=rand(.3,1);ep({x:hand[0]+dir[0]*reach*u,y:Math.max(4,hand[1]+dir[1]*reach*u),z:hand[2]+dir[2]*reach*u,vx:rand(-40,40),vy:rand(20,90),vz:rand(-40,40),dur:.45,s:7,c:'#bff4ff',a:.9});}}
+/* Whirlwind: the same violet glow as Leap Strike, trailing the spinning blade */
+function whirlGlow3D(p,Hh,lift,t){const rem=p.buffs.whirl,al=Math.min(1,(2-rem)/.12,rem/.2);if(al<=.02)return;
+  const head=E.face-Hh.body.ry,R=78,Rm=R*.55,y=24+lift,n=16,span=4.2,pt=(a,r)=>[p.x+Math.cos(a)*r,y,p.y+Math.sin(a)*r];
+  for(let i=0;i<n;i++){const a0=head+span*(1-i/n),a1=head+span*(1-(i+1)/n),u=(i+1)/n,w=al*(.25+.75*u);
+    const T0=pt(a0,R),T1=pt(a1,R);
+    beam(pt(a0,Rm),pt(a1,Rm),50,'#5b2fb8',w*.35);beam(T0,T1,36,'#a46bff',w*.55);beam(T0,T1,10,'#f4ecff',w*.95);beam(pt(a0,R*.85),pt(a1,R*.85),20,'#c9a6ff',w*.4);
+    if(i%3===0)decal(E.G.disc,T0[0]+SHX*14,T0[2]+SHZ*14,22,22,0,'#05030a',.25*w,.35);}
+  const H=pt(head,R);spr(H[0],H[1],H[2],30,30,'#f4ecff',.85*al);
+  if(Math.random()<.6){const a=head+rand(0,span),r=rand(Rm,R);ep({x:p.x+Math.cos(a)*r,y:y+rand(-6,6),z:p.y+Math.sin(a)*r,vx:rand(-30,30),vy:rand(10,60),vz:rand(-30,30),dur:.6,s:rand(14,24),grow:18,c:'#2a1650',a:.35});}
+  if(Math.random()<.5){const a=head+rand(0,span*.4);ep({x:p.x+Math.cos(a)*R,y,z:p.y+Math.sin(a)*R,vx:rand(-20,20),vy:rand(10,50),vz:rand(-20,20),dur:.4,s:5,c:'#c9a6ff',a:.9});}}
 /* Leap Strike: crouch, launch, arch back with the greatsword behind the head, then an overhead slam that lands with the hero */
 function leapLift(k){const H=105;return k<.5?H*Math.sin(k/.5*Math.PI/2):k<.62?H:H*(1-Math.pow((k-.62)/.38,2));}
 function leapStrike3D(g,p,b,Hh,lift,rdt,t){
@@ -2268,6 +2278,7 @@ function render3D(){
         if(Math.random()<.6)ep({x:qx,y:36+lift,z:qz,vx:rand(-10,10),vy:rand(40,90),vz:rand(-10,10),dur:.45,s:rand(10,16),grow:-6,c:Math.random()<.5?'#ff7a1f':'#ffd36b',a:.9});}
       spr(p.x,26+lift,p.y,110,110,'#ff6a1f',.28+.08*Math.sin(t*10));}
     decal(G.disc,p.x+SHX*(8+lift)*.5,p.y+SHZ*(8+lift)*.5,15,15,0,'#000000',.4,.3);
+    if(p.buffs.whirl>0)whirlGlow3D(p,Hh,lift,t);
     const inR=!b.dead&&(p.buffs.anchor||dist(p,b)-p.r-b.r<=g.d.range),rr=p.r+g.d.range;
     if(g.cur===ME){const hr=geo('hair'+Math.round(rr),()=>ringG(1-Math.min(.02,3/Math.max(rr,60)),128,0,TAU));decal(hr,p.x,p.y,rr,rr,0,g.c.color,inR?.5:.2,.9,true);}
     if(p.empower>0)decal(G.thin,p.x,p.y,24,24,0,'#ffe08a',.8,1.1,true);
