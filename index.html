@@ -980,7 +980,7 @@ function hitBoss(base,opt={}){
   v=Math.max(1,Math.round(v*rand(0.94,1.06)));
   let rest=v;
   if(b.shield>0){const a=Math.min(b.shield,rest);b.shield-=a;rest-=a;}
-  b.hp-=rest;g.stats.dealt+=v;b.flash=0.07;SFX.play(crit?'crit':(rest<v?'shieldHit':'hit'));
+  b.hp-=rest;g.stats.dealt+=v;b.flash=0.07;if(!opt.quiet)SFX.play(crit?'crit':(rest<v?'shieldHit':'hit'));
   text(b.x+rand(-26,26),b.y-b.r-4+rand(-8,8),crit?v+'!':v,crit?'#ffd36b':(rest<v?'#9fd0ff':'#ffffff'),crit?22:15);
   if(p.buffs.lifesteal)healPlayer(v*(p.lsMul||.3));
   addFury(3);
@@ -1058,7 +1058,7 @@ function basicAttack(){
   p.swingT=0.24;let mul=1,force=false;if(p.empower>0){p.empower--;mul=1.5;force=true;}
   const base=(g.key==='shaman'?d.atk+d.power*0.35:d.atk)*mul;
   if(!c.ranged&&g.key==='brawler'){p.punchN=(p.punchN||0)+1;const hook=p.punchN%3===0,t=dirTo(p,b);p.hook=hook;p.punchSide=hook?0:p.punchN%2;SFX.play(hook?'hook':'punch');hitBoss(base*c.meleeMul*(hook?1.3:.9),{canCrit:true,force});addStagger();g.hitstop=hook?.05:.02;fx({type:'punch',x:b.x-t.x*b.r*.85,y:b.y-t.y*b.r*.85,ang:Math.atan2(t.y,t.x),dur:hook?.26:.18,big:hook});}
-  else if(!c.ranged){SFX.play(g.key==='swordsman'?'swBasic':'swing');hitBoss(base*c.meleeMul,{canCrit:true,force});addStagger();const t=dirTo(p,b);fx({type:'slash',x:p.x+t.x*(p.r+18),y:p.y+t.y*(p.r+18),ang:Math.atan2(t.y,t.x)+Math.PI/2,r:26,color:hexA(c.color,1),dur:0.18});}
+  else if(!c.ranged){const sw=g.key==='swordsman';SFX.play(sw?'swBasic':'swing');hitBoss(base*c.meleeMul,{canCrit:true,force,quiet:sw});addStagger();const t=dirTo(p,b);fx({type:'slash',x:p.x+t.x*(p.r+18),y:p.y+t.y*(p.r+18),ang:Math.atan2(t.y,t.x)+Math.PI/2,r:26,color:hexA(c.color,1),dur:0.18});}
   else{SFX.play(g.key==='gunner'?'gunShot':g.key==='shaman'?'shamanBasic':g.key==='archer'?'archerShot':c.proj.kind);const t=dirTo(p,b);shoot({vx:t.x*c.proj.speed,vy:t.y*c.proj.speed,dmg:base,canCrit:true,force,r:c.proj.r+(force?2:0),kind:c.proj.kind,color:force?'#ffe08a':c.color,life:p.buffs.anchor?3:1.6,homing:!!p.buffs.anchor});}
 }
 
