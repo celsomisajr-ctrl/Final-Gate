@@ -1,6 +1,6 @@
 # Final Gate
 
-<img src="assets/png/app-icon-192.png" width="96" alt="Final Gate icon">
+<img src="assets/png/app-icon-192-v2.png" width="96" alt="Final Gate icon">
 
 A one-life 3D boss fight that runs in the browser, on desktop and phone.
 
