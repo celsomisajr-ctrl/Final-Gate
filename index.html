@@ -684,18 +684,21 @@ const SFX=(()=>{
     if(samplesLoading||!ac)return;samplesLoading=true;
     for(const k in SAMPLE_SRC){
       try{const bin=atob(SAMPLE_SRC[k].split(',')[1]),buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-        const done=b=>{if(samples[k])return;samples[k]=b;trace('sample-ready',{sample:k});},fail=e=>trace('sample-failure',{sample:k,...errorInfo(e)});
+        const done=b=>{if(samples[k])return;samples[k]=b;trace('sample-ready',{sample:k});const w=waiting[k];delete waiting[k];if(w&&performance.now()-w.at<450)sample(k,w.vol);},
+          fail=e=>{if(samples[k])return;failed[k]=true;trace('sample-failure',{sample:k,...errorInfo(e)});const w=waiting[k];delete waiting[k];if(w&&w.fallback)w.fallback();};
         const r=ac.decodeAudioData(buf.buffer,done,fail);if(r&&r.then)r.then(done,fail);
       }catch(e){trace('sample-failure',{sample:k,...errorInfo(e)});}
     }
   }
   function sample(k,vol,fallback){
-    const b=samples[k];if(!b){loadSamples();if(fallback)fallback();return;}
+    const b=samples[k];
+    /* a clip that is still decoding plays as soon as it is ready (if that is within ~0.45 s); the old built-in sound is only a backup for a clip the browser cannot decode */
+    if(!b){loadSamples();if(failed[k]||!ac){if(fallback)fallback();}else waiting[k]={vol,fallback,at:performance.now()};return;}
     const src=ac.createBufferSource(),g=ac.createGain();src.buffer=b;g.gain.value=vol;
     src.connect(g);g.connect(master);voices++;src.onended=()=>{voices--;src.disconnect();g.disconnect();if(live[k]&&live[k].src===src)delete live[k];};src.start(ac.currentTime);
     live[k]={src,g};
   }
-  const live={};
+  const live={},waiting={},failed={};
   function fadeOut(k,t=.35){const v=live[k];if(!v||!ac)return;const now=ac.currentTime;try{v.g.gain.cancelScheduledValues(now);v.g.gain.setValueAtTime(v.g.gain.value,now);v.g.gain.linearRampToValueAtTime(0,now+t);v.src.stop(now+t+.02);}catch(e){}delete live[k];}
   function noise(o){
     const t=ac.currentTime+(o.d||0),dur=o.dur||.15,src=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();
